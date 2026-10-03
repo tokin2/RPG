@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mesa do mestre</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;800&family=IM+Fell+English&display=swap">
+<style>
+:root{--bg:#b9b9b9;--panel:#e7e7e4;--ink:#0f0f12;--muted:#5c5c64;--pv:#9b1c2e;--pm:#3a6a94;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#09090a}}
+:root[data-theme="dark"]{--bg:#09090a}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.35 "IM Fell English",Georgia,serif}
+.wrap{max-width:1000px;margin:0 auto;padding:16px}
+h1{font:800 clamp(24px,5vw,34px) Cinzel,Georgia,serif;margin:0 0 4px;color:#f2f2f0;text-shadow:0 1px 0 #000}
+.sub{color:#d5d5d2;margin:0 0 16px;font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.card{background:var(--panel);border:2.5px solid var(--ink);border-radius:12px 7px 14px 8px;padding:12px 14px;box-shadow:2px 3px 0 rgba(0,0,0,.4)}
+.card h2{font:800 20px Cinzel,serif;margin:0}
+.card .m{color:var(--muted);font-size:14px;margin-bottom:8px}
+.bar{height:9px;border:1.5px solid var(--ink);border-radius:5px;background:#cdcdca;overflow:hidden;margin:2px 0 8px}
+.bar i{display:block;height:100%}
+.row{display:flex;justify-content:space-between;font-size:14px}
+.row b{font-family:Cinzel,serif}
+.def{display:inline-block;border:2px solid var(--ink);border-radius:6px 6px 16px 16px;padding:0 10px;font:800 20px Cinzel,serif}
+a.b{display:inline-block;margin-top:8px;padding:4px 12px;border:1.5px solid var(--ink);border-radius:6px;color:var(--ink);text-decoration:none;font-size:14px}
+a.b:hover{background:#cdcdca}
+.msg{background:var(--panel);border:2.5px solid var(--ink);border-radius:10px;padding:12px 14px}
+button{font:inherit;background:var(--panel);color:var(--ink);border:1.5px solid var(--ink);border-radius:6px;padding:4px 12px;cursor:pointer;margin-bottom:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Mesa do mestre</h1>
+<p class="sub" id="st">Carregando fichas…</p>
+<button id="rf">Atualizar agora</button>
+<div class="grid" id="g"></div>
+</div>
+<script>
+var SB_URL="https://tfguskhdabewpabiqbml.supabase.co",SB_KEY="sb_publishable_F9RIyN4V4nl9d4H40Wf2bw_EcuPJje7";
+function n(v){return parseInt(v,10)||0}
+function esc(t){var d=document.createElement("div");d.textContent=t==null?"":t;return d.innerHTML}
+function pct(a,m){return m>0?Math.max(0,Math.min(100,a/m*100)):0}
+function load(){
+  fetch(SB_URL+"/rest/v1/fichas?select=id,dados,updated_at&order=updated_at.desc",{headers:{apikey:SB_KEY}})
+  .then(function(r){return r.ok?r.json():Promise.reject(r.status)})
+  .then(function(rows){
+    document.getElementById("st").textContent=rows.length?rows.length+" ficha(s) na mesa. Atualiza sozinho a cada 20 segundos.":"Nenhuma ficha salva ainda. Peça para o pessoal abrir e preencher a ficha.";
+    document.getElementById("g").innerHTML=rows.map(function(r){
+      var d=r.dados||{},def=10+n(d["a-des"])+n(d.defx),when=new Date(r.updated_at).toLocaleString("pt-BR");
+      return '<div class="card"><h2>'+esc(d.nome||"Sem nome")+'</h2><div class="m">'+esc([d.raca,d.classe].filter(Boolean).join(" · "))+(d.nivel?" · nível "+esc(d.nivel):"")+'</div>'+
+      '<div class="row"><span>PV</span><b>'+n(d.pv)+' / '+n(d.pvm)+'</b></div><div class="bar"><i style="width:'+pct(n(d.pv),n(d.pvm))+'%;background:var(--pv)"></i></div>'+
+      '<div class="row"><span>PM</span><b>'+n(d.pm)+' / '+n(d.pmm)+'</b></div><div class="bar"><i style="width:'+pct(n(d.pm),n(d.pmm))+'%;background:var(--pm)"></i></div>'+
+      '<div class="row"><span>Defesa <span class="def">'+def+'</span></span><span style="color:var(--muted);font-size:12px">'+esc(when)+'</span></div>'+
+      '<a class="b" href="index.html?f='+encodeURIComponent(r.id)+'">Abrir ficha completa</a></div>'
+    }).join("");
+  })
+  .catch(function(e){document.getElementById("st").textContent="Não consegui carregar as fichas ("+e+"). Confira a internet e se a tabela foi criada no Supabase."});
+}
+document.getElementById("rf").onclick=load;
+load();setInterval(load,20000);
+</script>
+</body>
+</html>
