@@ -26,7 +26,7 @@ h1{font:800 clamp(24px,5vw,34px) Cinzel,Georgia,serif;margin:0 0 4px;color:#f2f2
 .row b{font-family:Cinzel,serif}
 .def{display:inline-block;border:2px solid var(--ink);border-radius:6px 6px 16px 16px;padding:0 10px;font:800 20px Cinzel,serif}
 a.b{display:inline-block;margin-top:8px;padding:4px 12px;border:1.5px solid var(--ink);border-radius:6px;color:var(--ink);text-decoration:none;font-size:14px}
-a.b:hover{background:#2e3237}
+a.b:hover{background:#2e3237}a.b+a.b{margin-left:6px}
 .msg{background:var(--panel);border:2.5px solid var(--ink);border-radius:10px;padding:12px 14px}
 button{font:inherit;background:var(--panel);color:var(--ink);border:1.5px solid var(--ink);border-radius:6px;padding:4px 12px;cursor:pointer;margin-bottom:14px}
 .msg{background:var(--panel);border:2.5px solid var(--ink);border-radius:10px;padding:8px 12px;margin:0 0 14px;font-size:14px}
@@ -63,7 +63,7 @@ function load(){
       '<div class="row"><span>PM</span><b>'+n(d.pm)+' / '+n(d.pmm)+'</b></div><div class="bar"><i style="width:'+pct(n(d.pm),n(d.pmm))+'%;background:var(--pm)"></i></div>'+
       '<div class="row"><span>Defesa <span class="def">'+def+'</span></span><span style="color:var(--muted);font-size:12px">'+esc(when)+'</span></div>'+
       '<div class="row" style="margin-top:6px"><span>Dado da sorte</span><b>'+(d.dado===undefined?3:Math.max(0,Math.min(3,n(d.dado))))+' / 3</b></div>'+
-      '<a class="b" href="index.html?f='+encodeURIComponent(r.id)+'">Abrir ficha</a><button type="button" class="del" data-id="'+esc(r.id)+'">Apagar ficha</button><div class="codew"><button type="button" class="code" data-code="'+esc(r.id)+'" title="Toque para copiar o código">Código: <b>'+esc(r.id)+'</b></button></div></div>'
+      '<a class="b" href="index.html?f='+encodeURIComponent(r.id)+'&ro=1">Só olhar</a><a class="b" href="index.html?f='+encodeURIComponent(r.id)+'&e=1">Editar ficha</a><button type="button" class="del" data-id="'+esc(r.id)+'">Apagar ficha</button><div class="codew"><button type="button" class="code" data-code="'+esc(r.id)+'" title="Toque para copiar o código">Código: <b>'+esc(r.id)+'</b></button></div></div>'
     }).join("");
   })
   .catch(function(e){document.getElementById("st").textContent="Não consegui carregar as fichas ("+e+"). Confira a internet e se a tabela foi criada no Supabase."});

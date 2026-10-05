@@ -308,7 +308,7 @@ if(VIEW){
     document.getElementById("mtxt").textContent=on?"Modo mestre: somente leitura. A ficha do jogador não será alterada.":"Modo mestre: edição liberada. O que você mudar vai para a ficha do jogador.";
     document.getElementById("mtog").textContent=on?"Liberar edição":"Travar edição"}
   document.getElementById("mtog").onclick=function(){lock(EDIT)};
-  lock(true);
+  var RO=!!QS.get("ro");lock(!QS.get("e")||RO);if(RO)document.getElementById("mtog").hidden=true;
   st("Modo mestre: carregando…");sync(true);
 }else{
   document.getElementById("code").textContent=CODE;
