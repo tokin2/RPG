@@ -32,6 +32,7 @@ button{font:inherit;background:var(--panel);color:var(--ink);border:1.5px solid 
 .msg{background:var(--panel);border:2.5px solid var(--ink);border-radius:10px;padding:8px 12px;margin:0 0 14px;font-size:14px}
 .del{margin:8px 0 0 8px;margin-bottom:0;border-color:var(--pv);color:var(--pv);font-size:14px;padding:4px 12px}
 .del:disabled{opacity:.5;cursor:default}
+.cp{margin:0;padding:1px 10px;font-size:13px}
 </style>
 </head>
 <body>
@@ -62,6 +63,7 @@ function load(){
       '<div class="row"><span>PM</span><b>'+n(d.pm)+' / '+n(d.pmm)+'</b></div><div class="bar"><i style="width:'+pct(n(d.pm),n(d.pmm))+'%;background:var(--pm)"></i></div>'+
       '<div class="row"><span>Defesa <span class="def">'+def+'</span></span><span style="color:var(--muted);font-size:12px">'+esc(when)+'</span></div>'+
       '<div class="row" style="margin-top:6px"><span>Dado da sorte</span><b>'+(d.dado===undefined?3:Math.max(0,Math.min(3,n(d.dado))))+' / 3</b></div>'+
+      '<div class="row" style="margin-top:6px;align-items:center"><span>Código <b>'+esc(r.id)+'</b></span><button type="button" class="cp" data-code="'+esc(r.id)+'">Copiar</button></div>'+
       '<a class="b" href="index.html?f='+encodeURIComponent(r.id)+'">Abrir e editar ficha</a><button type="button" class="del" data-id="'+esc(r.id)+'">Apagar ficha</button></div>'
     }).join("");
   })
@@ -72,6 +74,13 @@ document.getElementById("g").addEventListener("click",function(e){
   if(b.dataset.armed){delSheet(b.dataset.id,b);return}
   b.dataset.armed="1";b.textContent="Confirmar apagar?";busy=true;
   setTimeout(function(){if(!b.isConnected)return;delete b.dataset.armed;if(!b.disabled)b.textContent="Apagar ficha";busy=false},4000);
+});
+document.getElementById("g").addEventListener("click",function(e){
+  var b=e.target.closest&&e.target.closest(".cp");if(!b)return;
+  var c=b.dataset.code;
+  function ok(){b.textContent="Copiado!";setTimeout(function(){if(b.isConnected)b.textContent="Copiar"},1500)}
+  function fb(){var t=document.createElement("textarea");t.value=c;t.style.position="fixed";t.style.opacity="0";document.body.appendChild(t);t.select();try{document.execCommand("copy");ok()}catch(x){say("Não consegui copiar. O código é: "+c)}document.body.removeChild(t)}
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(c).then(ok,fb);else fb();
 });
 function delSheet(id,b){
   b.disabled=true;b.textContent="Apagando…";say("");
