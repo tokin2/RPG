@@ -29,6 +29,9 @@ a.b{display:inline-block;margin-top:8px;padding:4px 12px;border:1.5px solid var(
 a.b:hover{background:#2e3237}
 .msg{background:var(--panel);border:2.5px solid var(--ink);border-radius:10px;padding:12px 14px}
 button{font:inherit;background:var(--panel);color:var(--ink);border:1.5px solid var(--ink);border-radius:6px;padding:4px 12px;cursor:pointer;margin-bottom:14px}
+.msg{background:var(--panel);border:2.5px solid var(--ink);border-radius:10px;padding:8px 12px;margin:0 0 14px;font-size:14px}
+.del{margin:8px 0 0 8px;margin-bottom:0;border-color:var(--pv);color:var(--pv);font-size:14px;padding:4px 12px}
+.del:disabled{opacity:.5;cursor:default}
 </style>
 </head>
 <body>
@@ -36,6 +39,7 @@ button{font:inherit;background:var(--panel);color:var(--ink);border:1.5px solid 
 <h1>Mesa do mestre</h1>
 <p class="sub" id="st">Carregando fichas…</p>
 <button id="rf">Atualizar agora</button>
+<p class="msg" id="msg" hidden></p>
 <div class="grid" id="g"></div>
 </div>
 <script>
@@ -43,10 +47,13 @@ var SB_URL="https://tfguskhdabewpabiqbml.supabase.co",SB_KEY="sb_publishable_F9R
 function n(v){return parseInt(v,10)||0}
 function esc(t){var d=document.createElement("div");d.textContent=t==null?"":t;return d.innerHTML}
 function pct(a,m){return m>0?Math.max(0,Math.min(100,a/m*100)):0}
+var busy=false;
+function say(x){var m=document.getElementById("msg");m.textContent=x;m.hidden=!x}
 function load(){
   fetch(SB_URL+"/rest/v1/fichas?select=id,dados,updated_at&order=updated_at.desc",{headers:{apikey:SB_KEY}})
   .then(function(r){return r.ok?r.json():Promise.reject(r.status)})
   .then(function(rows){
+    if(busy)return;
     document.getElementById("st").textContent=rows.length?rows.length+" ficha(s) na mesa. Atualiza sozinho a cada 20 segundos.":"Nenhuma ficha salva ainda. Peça para o pessoal abrir e preencher a ficha.";
     document.getElementById("g").innerHTML=rows.map(function(r){
       var d=r.dados||{},def=10+Math.floor(((d["v-des"]===undefined?10:n(d["v-des"]))-10)/2)+n(d.defx),when=new Date(r.updated_at).toLocaleString("pt-BR");
@@ -55,10 +62,26 @@ function load(){
       '<div class="row"><span>PM</span><b>'+n(d.pm)+' / '+n(d.pmm)+'</b></div><div class="bar"><i style="width:'+pct(n(d.pm),n(d.pmm))+'%;background:var(--pm)"></i></div>'+
       '<div class="row"><span>Defesa <span class="def">'+def+'</span></span><span style="color:var(--muted);font-size:12px">'+esc(when)+'</span></div>'+
       '<div class="row" style="margin-top:6px"><span>Dado da sorte</span><b>'+(d.dado===undefined?3:Math.max(0,Math.min(3,n(d.dado))))+' / 3</b></div>'+
-      '<a class="b" href="index.html?f='+encodeURIComponent(r.id)+'">Abrir ficha completa</a></div>'
+      '<a class="b" href="index.html?f='+encodeURIComponent(r.id)+'">Abrir ficha completa</a><button type="button" class="del" data-id="'+esc(r.id)+'">Apagar ficha</button></div>'
     }).join("");
   })
   .catch(function(e){document.getElementById("st").textContent="Não consegui carregar as fichas ("+e+"). Confira a internet e se a tabela foi criada no Supabase."});
+}
+document.getElementById("g").addEventListener("click",function(e){
+  var b=e.target.closest&&e.target.closest(".del");if(!b)return;
+  if(b.dataset.armed){delSheet(b.dataset.id,b);return}
+  b.dataset.armed="1";b.textContent="Confirmar apagar?";busy=true;
+  setTimeout(function(){if(!b.isConnected)return;delete b.dataset.armed;if(!b.disabled)b.textContent="Apagar ficha";busy=false},4000);
+});
+function delSheet(id,b){
+  b.disabled=true;b.textContent="Apagando…";say("");
+  fetch(SB_URL+"/rest/v1/fichas?id=eq."+encodeURIComponent(id),{method:"DELETE",headers:{apikey:SB_KEY,Prefer:"return=representation"}})
+  .then(function(r){return r.ok?r.json():Promise.reject(r.status)})
+  .then(function(rows){busy=false;
+    if(rows.length){say("Ficha apagada.")}
+    else{say("Nada foi apagado. Falta criar no Supabase a regra que permite apagar (veja a instrução que o Claude passou).")}
+    load()})
+  .catch(function(e){busy=false;say("Não consegui apagar ("+e+"). Confira a internet e a regra de apagar no Supabase.");load()});
 }
 document.getElementById("rf").onclick=load;
 load();setInterval(load,20000);
