@@ -54,6 +54,7 @@ function load(){
       '<div class="row"><span>PV</span><b>'+n(d.pv)+' / '+n(d.pvm)+'</b></div><div class="bar"><i style="width:'+pct(n(d.pv),n(d.pvm))+'%;background:var(--pv)"></i></div>'+
       '<div class="row"><span>PM</span><b>'+n(d.pm)+' / '+n(d.pmm)+'</b></div><div class="bar"><i style="width:'+pct(n(d.pm),n(d.pmm))+'%;background:var(--pm)"></i></div>'+
       '<div class="row"><span>Defesa <span class="def">'+def+'</span></span><span style="color:var(--muted);font-size:12px">'+esc(when)+'</span></div>'+
+      '<div class="row" style="margin-top:6px"><span>Dado da sorte</span><b>'+(d.dado===undefined?3:Math.max(0,Math.min(3,n(d.dado))))+' / 3</b></div>'+
       '<a class="b" href="index.html?f='+encodeURIComponent(r.id)+'">Abrir ficha completa</a></div>'
     }).join("");
   })
