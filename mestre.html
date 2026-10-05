@@ -6,7 +6,7 @@
 <title>Mesa do mestre</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;800&family=IM+Fell+English&display=swap">
 <style>
-:root{--bg:#b9b9b9;--panel:#e7e7e4;--ink:#0f0f12;--muted:#5c5c64;--pv:#9b1c2e;--pm:#3a6a94;
+:root{--bg:#08080a;--panel:#212428;--ink:#dcd9d2;--muted:#9b9ba3;--pv:#c63a4f;--pm:#5a97d0;color-scheme:dark;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#09090a}}
 :root[data-theme="dark"]{--bg:#09090a}
@@ -20,13 +20,13 @@ h1{font:800 clamp(24px,5vw,34px) Cinzel,Georgia,serif;margin:0 0 4px;color:#f2f2
 .card{background:var(--panel);border:2.5px solid var(--ink);border-radius:12px 7px 14px 8px;padding:12px 14px;box-shadow:2px 3px 0 rgba(0,0,0,.4)}
 .card h2{font:800 20px Cinzel,serif;margin:0}
 .card .m{color:var(--muted);font-size:14px;margin-bottom:8px}
-.bar{height:9px;border:1.5px solid var(--ink);border-radius:5px;background:#cdcdca;overflow:hidden;margin:2px 0 8px}
+.bar{height:9px;border:1.5px solid var(--ink);border-radius:5px;background:#2e3237;overflow:hidden;margin:2px 0 8px}
 .bar i{display:block;height:100%}
 .row{display:flex;justify-content:space-between;font-size:14px}
 .row b{font-family:Cinzel,serif}
 .def{display:inline-block;border:2px solid var(--ink);border-radius:6px 6px 16px 16px;padding:0 10px;font:800 20px Cinzel,serif}
 a.b{display:inline-block;margin-top:8px;padding:4px 12px;border:1.5px solid var(--ink);border-radius:6px;color:var(--ink);text-decoration:none;font-size:14px}
-a.b:hover{background:#cdcdca}
+a.b:hover{background:#2e3237}
 .msg{background:var(--panel);border:2.5px solid var(--ink);border-radius:10px;padding:12px 14px}
 button{font:inherit;background:var(--panel);color:var(--ink);border:1.5px solid var(--ink);border-radius:6px;padding:4px 12px;cursor:pointer;margin-bottom:14px}
 </style>
@@ -49,7 +49,7 @@ function load(){
   .then(function(rows){
     document.getElementById("st").textContent=rows.length?rows.length+" ficha(s) na mesa. Atualiza sozinho a cada 20 segundos.":"Nenhuma ficha salva ainda. Peça para o pessoal abrir e preencher a ficha.";
     document.getElementById("g").innerHTML=rows.map(function(r){
-      var d=r.dados||{},def=10+n(d["a-des"])+n(d.defx),when=new Date(r.updated_at).toLocaleString("pt-BR");
+      var d=r.dados||{},def=10+Math.floor(((d["v-des"]===undefined?10:n(d["v-des"]))-10)/2)+n(d.defx),when=new Date(r.updated_at).toLocaleString("pt-BR");
       return '<div class="card"><h2>'+esc(d.nome||"Sem nome")+'</h2><div class="m">'+esc([d.raca,d.classe].filter(Boolean).join(" · "))+(d.nivel?" · nível "+esc(d.nivel):"")+'</div>'+
       '<div class="row"><span>PV</span><b>'+n(d.pv)+' / '+n(d.pvm)+'</b></div><div class="bar"><i style="width:'+pct(n(d.pv),n(d.pvm))+'%;background:var(--pv)"></i></div>'+
       '<div class="row"><span>PM</span><b>'+n(d.pm)+' / '+n(d.pmm)+'</b></div><div class="bar"><i style="width:'+pct(n(d.pm),n(d.pmm))+'%;background:var(--pm)"></i></div>'+
