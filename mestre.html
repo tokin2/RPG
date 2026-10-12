@@ -33,14 +33,30 @@ button{font:inherit;background:var(--panel);color:var(--ink);border:1.5px solid 
 .del{margin:8px 0 0 8px;margin-bottom:0;border-color:var(--pv);color:var(--pv);font-size:14px;padding:4px 12px}
 .del:disabled{opacity:.5;cursor:default}
 .codew{text-align:center;margin-top:12px}.code{margin:0;padding:4px 16px;font-size:15px;border-style:dashed}.code b{font-family:Cinzel,serif;letter-spacing:.12em}
+.tools{display:flex;gap:8px;flex-wrap:wrap}
+.hbtn{margin:8px 0 0 8px;margin-bottom:0;font-size:14px;padding:4px 12px}
+#hp{background:var(--panel);border:2.5px solid var(--ink);border-radius:12px 7px 14px 8px;padding:12px 14px;margin:0 0 16px}
+#hp h2{font:800 20px Cinzel,serif;margin:0 0 8px}
+.hbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;font-size:14px}
+.hbar select{font:inherit;font-size:14px;background:var(--bg);color:var(--ink);border:1.5px solid var(--ink);border-radius:6px;padding:3px 6px;max-width:100%}
+.hbar button{margin:0;font-size:14px;padding:3px 10px}
+.he{border-top:1px dashed var(--muted);padding:8px 0}
+.hh{font-size:14px;display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}
+.hh b{font-family:Cinzel,serif}.hh .t{color:var(--muted);font-size:13px}
+.tag{border:1.5px solid var(--muted);border-radius:10px;padding:0 8px;font-size:12px;color:var(--muted)}.tag.m{border-color:var(--pm);color:var(--pm)}
+.he ul{margin:4px 0 0;padding-left:18px;font-size:14px}.he li{margin:1px 0}.he .c{color:var(--muted)}.he s{color:var(--muted)}
+.hmore{margin-top:8px}
 </style>
 </head>
 <body>
 <div class="wrap">
 <h1>Mesa do mestre</h1>
 <p class="sub" id="st">Carregando fichas…</p>
-<button id="rf">Atualizar agora</button>
+<div class="tools"><button id="rf">Atualizar agora</button><button id="hb" aria-expanded="false">Histórico de alterações</button></div>
 <p class="msg" id="msg" hidden></p>
+<section id="hp" hidden><h2>Histórico de alterações</h2>
+<div class="hbar"><label>Ficha: <select id="hf"><option value="">Todas</option></select></label><button type="button" id="hx">Fechar</button></div>
+<div id="hl">Carregando…</div></section>
 <div class="grid" id="g"></div>
 </div>
 <script>
@@ -48,13 +64,13 @@ var SB_URL="https://tfguskhdabewpabiqbml.supabase.co",SB_KEY="sb_publishable_F9R
 function n(v){return parseInt(v,10)||0}
 function esc(t){var d=document.createElement("div");d.textContent=t==null?"":t;return d.innerHTML}
 function pct(a,m){return m>0?Math.max(0,Math.min(100,a/m*100)):0}
-var busy=false;
+var busy=false,ROWS=[],HOPEN=false;
 function say(x){var m=document.getElementById("msg");m.textContent=x;m.hidden=!x}
 function load(){
   fetch(SB_URL+"/rest/v1/fichas?select=id,dados,updated_at&order=updated_at.desc",{headers:{apikey:SB_KEY}})
   .then(function(r){return r.ok?r.json():Promise.reject(r.status)})
   .then(function(rows){
-    if(busy)return;
+    ROWS=rows;if(busy)return;
     document.getElementById("st").textContent=rows.length?rows.length+" ficha(s) na mesa. Atualiza sozinho a cada 20 segundos.":"Nenhuma ficha salva ainda. Peça para o pessoal abrir e preencher a ficha.";
     document.getElementById("g").innerHTML=rows.map(function(r){
       var d=r.dados||{},def=10+Math.floor(((d["v-des"]===undefined?10:n(d["v-des"]))-10)/2)+n(d.defx),when=new Date(r.updated_at).toLocaleString("pt-BR");
@@ -63,7 +79,7 @@ function load(){
       '<div class="row"><span>PM</span><b>'+n(d.pm)+' / '+n(d.pmm)+'</b></div><div class="bar"><i style="width:'+pct(n(d.pm),n(d.pmm))+'%;background:var(--pm)"></i></div>'+
       '<div class="row"><span>Defesa <span class="def">'+def+'</span></span><span style="color:var(--muted);font-size:12px">'+esc(when)+'</span></div>'+
       '<div class="row" style="margin-top:6px"><span>Dado da sorte</span><b>'+(d.dado===undefined?3:Math.max(0,Math.min(3,n(d.dado))))+' / 3</b></div>'+
-      '<a class="b" href="index.html?f='+encodeURIComponent(r.id)+'&ro=1">Só olhar</a><a class="b" href="index.html?f='+encodeURIComponent(r.id)+'&e=1">Editar ficha</a><button type="button" class="del" data-id="'+esc(r.id)+'">Apagar ficha</button><div class="codew"><button type="button" class="code" data-code="'+esc(r.id)+'" title="Toque para copiar o código">Código: <b>'+esc(r.id)+'</b></button></div></div>'
+      '<a class="b" href="index.html?f='+encodeURIComponent(r.id)+'&ro=1">Só olhar</a><a class="b" href="index.html?f='+encodeURIComponent(r.id)+'&e=1">Editar ficha</a><button type="button" class="hbtn" data-hist="'+esc(r.id)+'">Histórico</button><button type="button" class="del" data-id="'+esc(r.id)+'">Apagar ficha</button><div class="codew"><button type="button" class="code" data-code="'+esc(r.id)+'" title="Toque para copiar o código">Código: <b>'+esc(r.id)+'</b></button></div></div>'
     }).join("");
   })
   .catch(function(e){document.getElementById("st").textContent="Não consegui carregar as fichas ("+e+"). Confira a internet e se a tabela foi criada no Supabase."});
@@ -91,8 +107,33 @@ function delSheet(id,b){
     load()})
   .catch(function(e){busy=false;say("Não consegui apagar ("+e+"). Confira a internet e a regra de apagar no Supabase.");load()});
 }
-document.getElementById("rf").onclick=load;
-load();setInterval(load,20000);
+var HLIM=150;
+function hfmt(t){try{return new Date(t).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}catch(x){return t}}
+function loadHist(){
+  if(!HOPEN)return;
+  fetch(SB_URL+"/rest/v1/historico?select=id,ficha_id,nome,autor,mudancas,criado_em&order=criado_em.desc&limit="+HLIM,{headers:{apikey:SB_KEY}})
+  .then(function(r){return r.ok?r.json():Promise.reject(r.status)})
+  .then(function(rows){
+    var sel=document.getElementById("hf"),cur=sel.value,names={},ord=[];
+    ROWS.forEach(function(r){names[r.id]=((r.dados&&r.dados.nome)||"Sem nome");ord.push(r.id)});
+    rows.forEach(function(h){if(!(h.ficha_id in names)){names[h.ficha_id]=(h.nome||"Sem nome")+" (apagada)";ord.push(h.ficha_id)}});
+    sel.innerHTML='<option value="">Todas</option>'+ord.map(function(id){return '<option value="'+esc(id)+'">'+esc(names[id])+'</option>'}).join("");
+    sel.value=ord.indexOf(cur)>=0?cur:"";
+    var f=sel.value,list=rows.filter(function(h){return !f||h.ficha_id===f});
+    document.getElementById("hl").innerHTML=list.length?list.map(function(h){
+      var ch=(h.mudancas||[]).map(function(c){return '<li><span class="c">'+esc(c.campo)+':</span> <s>'+esc(c.de)+'</s> → <b>'+esc(c.para)+'</b></li>'}).join("");
+      return '<div class="he"><div class="hh"><b>'+esc(h.nome||names[h.ficha_id]||"Sem nome")+'</b><span class="tag'+(h.autor==="mestre"?" m":"")+'">'+(h.autor==="mestre"?"mestre":"jogador")+'</span><span class="t">'+esc(hfmt(h.criado_em))+'</span></div><ul>'+ch+'</ul></div>'}).join("")+(rows.length>=HLIM?'<p class="hmore sub">Mostrando os '+HLIM+' registros mais recentes.</p>':""):'<p class="sub">Nenhuma alteração registrada ainda. Os registros aparecem conforme as fichas são alteradas.</p>';
+  })
+  .catch(function(e){document.getElementById("hl").innerHTML='<p class="sub">Não consegui carregar o histórico ('+esc(e)+'). Confira se a tabela <b>historico</b> foi criada no Supabase (veja a instrução que o Claude passou).</p>'});
+}
+function openHist(id){HOPEN=true;var p=document.getElementById("hp");p.hidden=false;document.getElementById("hb").setAttribute("aria-expanded","true");if(id!==undefined)document.getElementById("hf").value=id;loadHist();if(id!==undefined)p.scrollIntoView({behavior:"smooth",block:"start"})}
+function closeHist(){HOPEN=false;document.getElementById("hp").hidden=true;document.getElementById("hb").setAttribute("aria-expanded","false")}
+document.getElementById("hb").onclick=function(){HOPEN?closeHist():openHist()};
+document.getElementById("hx").onclick=closeHist;
+document.getElementById("hf").onchange=loadHist;
+document.getElementById("g").addEventListener("click",function(e){var b=e.target.closest&&e.target.closest(".hbtn");if(!b)return;var id=b.dataset.hist;HOPEN=true;document.getElementById("hp").hidden=false;var sel=document.getElementById("hf");if(!sel.querySelector('option[value="'+id.replace(/"/g,'\\"')+'"]')){var o=document.createElement("option");o.value=id;o.textContent=id;sel.appendChild(o)}openHist(id)});
+document.getElementById("rf").onclick=function(){load();loadHist()};
+load();setInterval(function(){load();loadHist()},20000);
 </script>
 </body>
 </html>

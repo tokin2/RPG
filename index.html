@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Ficha de Tormenta</title>
+<title>Ficha</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;800&family=IM+Fell+English:ital@0;1&display=swap">
 <style>
 :root{--ink:#dcd9d2;--paper:#212428;--paper2:#2e3237;--rose1:#303135;--rose2:#0f0f11;--page:#08080a;--pv:#c63a4f;--pm:#5a97d0;--muted:#9b9ba3;color-scheme:dark;
@@ -210,6 +210,7 @@ button.x{border:0;padding:0;width:18px;font-size:17px;line-height:1;color:var(--
       </div>
     </div>
     <div>
+      <div class="sign"><span>Proficiência</span><strong id="prof">+2</strong></div>
       <div class="sign"><span>Iniciativa</span><strong id="ini">0</strong></div>
       <div class="sign"><span>Deslocamento</span><input data-k="desl" value="9m"></div>
     </div>
@@ -242,7 +243,7 @@ var A=[["for","Força"],["des","Destreza"],["con","Constituição"],["int","Inte
 var S=[["Acrobacia","des"],["Adestramento","car"],["Atletismo","for"],["Atuação","car"],["Cavalgar","des"],["Conhecimento","int"],["Cura","sab"],["Diplomacia","car"],["Enganação","car"],["Fortitude","con"],["Furtividade","des"],["Guerra","int"],["Iniciativa","des"],["Intimidação","car"],["Intuição","sab"],["Investigação","int"],["Jogatina","car"],["Ladinagem","des"],["Luta","for"],["Misticismo","int"],["Nobreza","int"],["Ofício","int"],["Percepção","sab"],["Pilotagem","des"],["Pontaria","des"],["Reflexos","des"],["Religião","sab"],["Sobrevivência","sab"],["Vontade","sab"],["Medicina","sab"]];
 var KEY="ficha-tormenta-v1";
 var SB_URL="https://tfguskhdabewpabiqbml.supabase.co",SB_KEY="sb_publishable_F9RIyN4V4nl9d4H40Wf2bw_EcuPJje7";
-var QS=new URLSearchParams(location.search),VIEW=QS.get("f"),USEMEM=false,CODE="",EDIT=false;
+var QS=new URLSearchParams(location.search),VIEW=QS.get("f"),USEMEM=false,CODE="",EDIT=false,BASE=null,BASEOK=false,pushing=false;
 (function(){CODE=VIEW||"";if(!CODE){try{CODE=localStorage.getItem("ficha-tormenta-code")||""}catch(x){}}if(!CODE){var c="abcdefghjkmnpqrstuvwxyz23456789",a=new Uint8Array(8);crypto.getRandomValues(a);for(var i=0;i<8;i++)CODE+=c[a[i]%c.length];try{localStorage.setItem("ficha-tormenta-code",CODE)}catch(x){}}})();
 function cap(s){return s.charAt(0).toUpperCase()+s.slice(1)}
 var FR='<svg class="fr" viewBox="0 0 100 140" aria-hidden="true" stroke-linejoin="round" stroke-linecap="round"><path class="p" stroke-width="2.4" d="M13 6H87Q96 6 96 15Q96 26 87 26H13Q4 26 4 15Q4 6 13 6Z"/><path class="l" stroke-width="1" d="M9 16Q9 11 14 11M91 16Q91 11 86 11M9 16Q9 21 14 21M91 16Q91 21 86 21"/><path class="p" stroke-width="2.4" d="M10 32H90V101H10Z"/><path class="l" stroke-width="1" d="M15 37H85V96H15Z"/><path class="l" stroke-width="1.2" d="M10 44Q18 44 18 32M90 44Q82 44 82 32M10 89Q18 89 18 101M90 89Q82 89 82 101"/><path class="k" d="M50 29L53 32L50 35L47 32Z"/><g transform="translate(32 91) scale(.56)"><path class="p" stroke-width="3.2" d="M32 8C19 8 10 17 10 29c0 8 4 13 9 16v9h8v-5h10v5h8v-9c5-3 9-8 9-16C54 17 45 8 32 8z"/><ellipse class="k" cx="23" cy="30" rx="5" ry="6"/><ellipse class="k" cx="41" cy="30" rx="5" ry="6"/><path class="k" d="M32 37l-3 6h6z"/><path class="l" stroke-width="2.5" d="M27 48v6M32 49v5M37 48v6"/></g></svg>';
@@ -283,6 +284,7 @@ function calc(){
   A.forEach(function(a){document.getElementById("m-"+a[0]).textContent=sg(mod(a[0]))});
   var tot=0;for(var k=0;k<14;k++){var nm=document.querySelector('[data-k="in'+k+'"]').value.trim(),q=fl("iq"+k),e=fl("ie"+k);if(isNaN(q))q=nm?1:0;if(isNaN(e))e=0;tot+=q*e}
   var u=document.getElementById("usado");u.textContent=Math.round(tot*10)/10;u.className=(num("carga")>0&&tot>num("carga"))?"over":"";
+  var lv0=Math.max(1,Math.min(20,num("nivel")||1));document.getElementById("prof").textContent="+"+(2+Math.floor((lv0-1)/4));
   var lv=Math.max(1,num("nivel")),half=Math.floor(lv/2),tr=lv>=15?6:lv>=7?4:2;
   list.forEach(function(i){var t=document.getElementById("t"+i).checked?tr:0;document.getElementById("s"+i).textContent=sg(half+mod(document.getElementById("sa"+i).value)+t+num("o"+i))});
   var ie=document.getElementById("s12");document.getElementById("ini").textContent=ie?ie.textContent:"—";
@@ -328,15 +330,61 @@ var SYNCK="ficha-tormenta-synced",pending=false,tm=null;
 function lget(k){try{return localStorage.getItem(k)}catch(x){return null}}
 function lset(k,v){try{localStorage.setItem(k,v)}catch(x){}}
 function st(t){var e=document.getElementById("cloud");if(e)e.textContent=t}
+
+var HNAME={classe:"Classe",nivel:"Nível",nome:"Nome",subtitulo:"Subtítulo",raca:"Raça",origem:"Origem",devocao:"Devoção",antecedentes:"Antecedentes",pv:"PV atuais",pvm:"PV máximos",pm:"PM atuais",pmm:"PM máximos",pvt:"PV temporários",defx:"Bônus de defesa",desl:"Deslocamento",dado:"Dado da sorte",carga:"Limite de espaços",eqp:"Equipado",pas:"Características passivas",hab:"Anotações",img:"Imagem",cn0:"Moeda (nome)",tib:"Moeda (quantidade)",cl:"Poção de cura (nome)",cq:"Poção de cura (quantidade)",ml:"Poção de mana (nome)",mq:"Poção de mana (quantidade)"};
+var HQ={},HQS=[],HT=null;
+function hclone(o){return o?JSON.parse(JSON.stringify(o)):null}
+function hv(v){if(v===true)return"sim";if(v===false)return"não";v=(v==null?"":String(v)).trim();if(!v)return"—";return v.length>80?v.slice(0,80)+"…":v}
+function sname(d,i){return(d&&d["sn"+i])||(S[i]?S[i][0]:"")||"sem nome"}
+function hname(d,i){return(d&&d["hn"+i])||"sem nome"}
+function attrName(c){var a=A.filter(function(x){return x[0]===c})[0];return a?a[1]:c}
+function hlabel(k,N){var m;if(HNAME[k])return HNAME[k];
+  if(m=/^v-(.+)$/.exec(k))return attrName(m[1])+" (valor)";
+  if(m=/^t(\d+)$/.exec(k))return"Perícia treinada: "+sname(N,m[1]);
+  if(m=/^sn(\d+)$/.exec(k))return"Perícia renomeada";
+  if(m=/^sa(\d+)$/.exec(k))return"Atributo da perícia "+sname(N,m[1]);
+  if(m=/^o(\d+)$/.exec(k))return"Outros da perícia "+sname(N,m[1]);
+  if(m=/^(in|iq|ie)(\d+)$/.exec(k))return"Inventário, linha "+(+m[2]+1)+" ("+{in:"item",iq:"quantidade",ie:"espaços"}[m[1]]+")";
+  if(m=/^h([ndstx])(\d+)$/.exec(k))return"Habilidade «"+hname(N,m[2])+"»: "+{n:"nome",d:"dano",s:"escala com",t:"tipo",x:"descrição"}[m[1]];
+  return k}
+function hdiff(O,N){
+  if(!O)return[{campo:"Ficha",de:"—",para:"criada",s:1}];
+  var ch=[],legacy=!O._m2,addS=[],addH=[];
+  function sets(key,fn,lab){if(!Array.isArray(O[key])||!Array.isArray(N[key]))return;
+    N[key].forEach(function(i){if(O[key].indexOf(i)<0){fn(i);ch.push({campo:lab+" adicionada",de:"—",para:key==="_list"?sname(N,i):hname(N,i),s:1})}});
+    O[key].forEach(function(i){if(N[key].indexOf(i)<0)ch.push({campo:lab+" removida",de:key==="_list"?sname(O,i):hname(O,i),para:"—",s:1})});
+    if(O[key].length===N[key].length&&O[key].join()!==N[key].join()&&N[key].every(function(i){return O[key].indexOf(i)>=0}))ch.push({campo:"Ordem das "+(key==="_list"?"perícias":"habilidades"),de:"—",para:"alterada",s:1})}
+  sets("_list",function(i){addS.push(String(i))},"Perícia");
+  if(!legacy)sets("_hl",function(i){addH.push(String(i))},"Habilidade");
+  Object.keys(N).forEach(function(k){
+    if(k.charAt(0)==="_")return;var m;
+    if(legacy&&/^h[ndstx]\d+$/.test(k))return;
+    if((m=/^h[ndstx](\d+)$/.exec(k))&&addH.indexOf(m[1])>=0)return;
+    if((m=/^(?:t|sn|sa|o)(\d+)$/.exec(k))&&addS.indexOf(m[1])>=0)return;
+    var nv=N[k],ov=O[k];
+    if(ov===undefined){var el=document.querySelector('[data-k="'+k+'"]');if(!el||el.tagName==="SELECT")return;ov=el.type==="checkbox"?el.defaultChecked:el.defaultValue}
+    if(String(ov)===String(nv))return;
+    if(k==="img"){ch.push({campo:"Imagem",de:ov?"imagem anterior":"nenhuma",para:nv?"nova imagem":"removida"});return}
+    if(/^sa\d+$/.test(k)){ov=attrName(ov);nv=attrName(nv)}
+    ch.push({campo:hlabel(k,N),de:hv(ov),para:hv(nv)})});
+  return ch.slice(0,40)}
+function hqAdd(list){list.forEach(function(c){if(c.s){HQS.push(c);return}var e=HQ[c.campo];if(e){e.para=c.para;if(e.de===e.para)delete HQ[c.campo]}else HQ[c.campo]={campo:c.campo,de:c.de,para:c.para}});
+  clearTimeout(HT);HT=setTimeout(hflush,20000)}
+function hflush(){clearTimeout(HT);var arr=Object.keys(HQ).map(function(k){return HQ[k]}).concat(HQS);HQ={};HQS=[];if(!arr.length)return;
+  arr=arr.slice(0,60).map(function(c){return{campo:c.campo,de:c.de,para:c.para}});
+  try{fetch(SB_URL+"/rest/v1/historico",{method:"POST",keepalive:true,headers:{apikey:SB_KEY,"Content-Type":"application/json",Prefer:"return=minimal"},body:JSON.stringify({ficha_id:CODE,nome:(MEM&&MEM.nome)||"",autor:VIEW?"mestre":"jogador",mudancas:arr})}).catch(function(){})}catch(x){}}
+function onPushed(snap){if(BASEOK){var ch=hdiff(BASE,snap);if(ch.length)hqAdd(ch)}BASE=hclone(snap);BASEOK=true}
+window.addEventListener("pagehide",hflush);document.addEventListener("visibilitychange",function(){if(document.visibilityState==="hidden")hflush()});
 function cloudPush(){pending=true;clearTimeout(tm);st("Salvando…");tm=setTimeout(doPush,900)}
-function doPush(){pending=false;fetch(SB_URL+"/rest/v1/fichas",{method:"POST",headers:{apikey:SB_KEY,"Content-Type":"application/json",Prefer:"resolution=merge-duplicates,return=minimal"},body:JSON.stringify({id:CODE,dados:MEM,updated_at:new Date().toISOString()})}).then(function(r){if(r.ok&&!VIEW)lset(SYNCK,CODE);st(r.ok?(VIEW?"Modo mestre: salvo na nuvem":"☁ Salva na nuvem"):"Erro ao salvar na nuvem ("+r.status+")")}).catch(function(){st("Sem conexão com a nuvem: salva só neste aparelho")})}
+function doPush(){pending=false;pushing=true;var snap=hclone(MEM);fetch(SB_URL+"/rest/v1/fichas",{method:"POST",headers:{apikey:SB_KEY,"Content-Type":"application/json",Prefer:"resolution=merge-duplicates,return=minimal"},body:JSON.stringify({id:CODE,dados:snap,updated_at:new Date().toISOString()})}).then(function(r){pushing=false;if(r.ok){try{onPushed(snap)}catch(x){}}if(r.ok&&!VIEW)lset(SYNCK,CODE);st(r.ok?(VIEW?"Modo mestre: salvo na nuvem":"☁ Salva na nuvem"):"Erro ao salvar na nuvem ("+r.status+")")}).catch(function(){pushing=false;st("Sem conexão com a nuvem: salva só neste aparelho")})}
 function pull(code,cb){fetch(SB_URL+"/rest/v1/fichas?id=eq."+encodeURIComponent(code)+"&select=dados",{headers:{apikey:SB_KEY}}).then(function(r){return r.ok?r.json():Promise.reject(r.status)}).then(function(rows){cb(rows&&rows[0]?rows[0].dados:null)}).catch(function(){st("Não consegui falar com a nuvem")})}
 function writeLocal(d){if(VIEW)return;lset(KEY,JSON.stringify(d));saveList()}
-function applyCloud(d){MEM=d;if(Array.isArray(d._list))list=d._list;migr(d);if(Array.isArray(d._hl))hl=d._hl;renderHab();USEMEM=true;renderSkills();load();USEMEM=false;calc();writeLocal(d)}
+function applyCloud(d){MEM=d;if(Array.isArray(d._list))list=d._list;migr(d);if(Array.isArray(d._hl))hl=d._hl;renderHab();USEMEM=true;renderSkills();load();USEMEM=false;calc();writeLocal(d);BASE=hclone(d);BASEOK=true}
 function localTs(){var d=null;try{d=JSON.parse(localStorage.getItem(KEY)||"null")}catch(x){}return d&&d._ts||0}
 function typing(){var a=document.activeElement;return a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)}
 function gone(){[KEY,LKEY,SYNCK,"ficha-tormenta-code"].forEach(function(k){try{localStorage.removeItem(k)}catch(x){}});lset("ficha-tormenta-msg","O mestre apagou a sua ficha anterior. Esta é uma ficha nova.");location.reload()}
 function sync(first){pull(CODE,function(d){
+  if(!pending&&!pushing){BASE=hclone(d);BASEOK=true}
   if(!d){
     if(VIEW){st(first?"Ficha não encontrada":"Esta ficha foi apagada");return}
     if(lget(SYNCK)===CODE){gone();return}
@@ -359,7 +407,7 @@ if(VIEW){
   var gm=lget("ficha-tormenta-msg");
   if(gm){try{localStorage.removeItem("ficha-tormenta-msg")}catch(x){}st(gm)}else st("Alterações são salvas neste aparelho e na nuvem.");
   sync(true);
-  document.getElementById("chcode").onclick=function(){var c=(prompt("Digite o código da ficha que você quer carregar neste aparelho:")||"").trim();if(!c||c===CODE)return;pull(c,function(d){if(!d){st("Código não encontrado");return}if(!confirm("Isso troca a ficha deste aparelho pela ficha desse código. Continuar?"))return;CODE=c;lset("ficha-tormenta-code",CODE);document.getElementById("code").textContent=CODE;applyCloud(d);save()})};
+  document.getElementById("chcode").onclick=function(){var c=(prompt("Digite o código da ficha que você quer carregar neste aparelho:")||"").trim();if(!c||c===CODE)return;pull(c,function(d){if(!d){st("Código não encontrado");return}if(!confirm("Isso troca a ficha deste aparelho pela ficha desse código. Continuar?"))return;hflush();CODE=c;lset("ficha-tormenta-code",CODE);document.getElementById("code").textContent=CODE;applyCloud(d);save()})};
 }
 setInterval(function(){sync(false)},10000);
 </script>
