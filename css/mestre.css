@@ -1,0 +1,262 @@
+/* ==========================================================================
+   Estilos da Mesa do Mestre - Tormenta20 RPG
+   ========================================================================== */
+
+body {
+  background: var(--bg);
+}
+
+.wrap {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+h1 {
+  font: 800 clamp(24px, 5vw, 34px) Cinzel, Georgia, serif;
+  margin: 0 0 4px;
+  color: #f2f2f0;
+  text-shadow: 0 1px 0 #000;
+}
+
+.sub {
+  color: #d5d5d2;
+  margin: 0 0 16px;
+  font-size: 14px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.card {
+  background: var(--panel);
+  border: 2.5px solid var(--ink);
+  border-radius: 12px 7px 14px 8px;
+  padding: 12px 14px;
+  box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.4);
+}
+
+.card h2 {
+  font: 800 20px Cinzel, serif;
+  margin: 0;
+}
+
+.card .m {
+  color: var(--muted);
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.bar {
+  height: 9px;
+  border: 1.5px solid var(--ink);
+  border-radius: 5px;
+  background: #2e3237;
+  overflow: hidden;
+  margin: 2px 0 8px;
+}
+
+.bar i {
+  display: block;
+  height: 100%;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+}
+
+.row b {
+  font-family: Cinzel, serif;
+}
+
+.def {
+  display: inline-block;
+  border: 2px solid var(--ink);
+  border-radius: 6px 6px 16px 16px;
+  padding: 0 10px;
+  font: 800 20px Cinzel, serif;
+}
+
+a.b {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 4px 12px;
+  border: 1.5px solid var(--ink);
+  border-radius: 6px;
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 14px;
+}
+
+a.b:hover {
+  background: #2e3237;
+}
+
+a.b + a.b {
+  margin-left: 6px;
+}
+
+.msg {
+  background: var(--panel);
+  border: 2.5px solid var(--ink);
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin: 0 0 14px;
+  font-size: 14px;
+}
+
+button {
+  font: inherit;
+  background: var(--panel);
+  color: var(--ink);
+  border: 1.5px solid var(--ink);
+  border-radius: 6px;
+  padding: 4px 12px;
+  cursor: pointer;
+  margin-bottom: 14px;
+}
+
+.del {
+  margin: 8px 0 0 8px;
+  margin-bottom: 0;
+  border-color: var(--pv);
+  color: var(--pv);
+  font-size: 14px;
+  padding: 4px 12px;
+}
+
+.del:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.codew {
+  text-align: center;
+  margin-top: 12px;
+}
+
+.code {
+  margin: 0;
+  padding: 4px 16px;
+  font-size: 15px;
+  border-style: dashed;
+}
+
+.code b {
+  font-family: Cinzel, serif;
+  letter-spacing: 0.12em;
+}
+
+.tools {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.hbtn {
+  margin: 8px 0 0 8px;
+  margin-bottom: 0;
+  font-size: 14px;
+  padding: 4px 12px;
+}
+
+#hp {
+  background: var(--panel);
+  border: 2.5px solid var(--ink);
+  border-radius: 12px 7px 14px 8px;
+  padding: 12px 14px;
+  margin: 0 0 16px;
+}
+
+#hp h2 {
+  font: 800 20px Cinzel, serif;
+  margin: 0 0 8px;
+}
+
+.hbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.hbar select {
+  font: inherit;
+  font-size: 14px;
+  background: var(--bg);
+  color: var(--ink);
+  border: 1.5px solid var(--ink);
+  border-radius: 6px;
+  padding: 3px 6px;
+  max-width: 100%;
+}
+
+.hbar button {
+  margin: 0;
+  font-size: 14px;
+  padding: 3px 10px;
+}
+
+.he {
+  border-top: 1px dashed var(--muted);
+  padding: 8px 0;
+}
+
+.hh {
+  font-size: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  align-items: baseline;
+}
+
+.hh b {
+  font-family: Cinzel, serif;
+}
+
+.hh .t {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.tag {
+  border: 1.5px solid var(--muted);
+  border-radius: 10px;
+  padding: 0 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.tag.m {
+  border-color: var(--pm);
+  color: var(--pm);
+}
+
+.he ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  font-size: 14px;
+}
+
+.he li {
+  margin: 1px 0;
+}
+
+.he .c {
+  color: var(--muted);
+}
+
+.he s {
+  color: var(--muted);
+}
+
+.hmore {
+  margin-top: 8px;
+}
