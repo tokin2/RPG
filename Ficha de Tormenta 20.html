@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ficha de Tormenta 20</title>
+<style>
+:root{
+  --bg:#f4efe6; --panel:#fffdf8; --text:#2b2620; --muted:#6b6255; --accent:#8b3a2f; --border:#d8cdb8;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){--bg:#1b1712;--panel:#241f19;--text:#eee6d8;--muted:#a99d89;--accent:#e08a67;--border:#3a3226;}
+}
+:root[data-theme="dark"]{--bg:#1b1712;--panel:#241f19;--text:#eee6d8;--muted:#a99d89;--accent:#e08a67;--border:#3a3226;}
+*{box-sizing:border-box;}
+html{scroll-padding-top:env(safe-area-inset-top,0px);}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Georgia,'Times New Roman',serif;
+  padding:16px calc(16px + env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) calc(16px + env(safe-area-inset-left,0px));
+  padding-top:calc(16px + env(safe-area-inset-top,0px));}
+h1{font-size:1.4rem;margin:0 0 4px;color:var(--accent);}
+.sub{color:var(--muted);font-size:.85rem;margin-bottom:16px;}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px;max-width:900px;margin-left:auto;margin-right:auto;}
+.card h2{margin:0 0 10px;font-size:1rem;color:var(--accent);border-bottom:1px solid var(--border);padding-bottom:6px;}
+.grid{display:grid;gap:10px;}
+.g2{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));}
+.g6{grid-template-columns:repeat(auto-fit,minmax(80px,1fr));}
+label{display:block;font-size:.72rem;color:var(--muted);margin-bottom:2px;}
+input,textarea,select{width:100%;background:transparent;border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-family:inherit;font-size:.9rem;}
+textarea{resize:vertical;min-height:70px;}
+.attr{text-align:center;background:var(--bg);border-radius:8px;padding:8px;border:1px solid var(--border);}
+.attr input{text-align:center;font-size:1.1rem;font-weight:bold;}
+.mod{font-size:1.3rem;font-weight:bold;color:var(--accent);margin-top:4px;}
+.overflow{overflow-x:auto;max-width:900px;margin:0 auto;}
+table{width:100%;border-collapse:collapse;font-size:.85rem;min-width:520px;}
+th,td{padding:5px 6px;text-align:left;border-bottom:1px solid var(--border);}
+th{color:var(--muted);font-weight:normal;font-size:.75rem;}
+td input[type=number]{width:60px;}
+.total{font-weight:bold;color:var(--accent);text-align:center;}
+.buttons{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;max-width:900px;margin-left:auto;margin-right:auto;}
+button{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:.85rem;cursor:pointer;font-family:inherit;}
+button.secondary{background:transparent;color:var(--accent);border:1px solid var(--accent);}
+@media print{ button,.buttons{display:none;} body{background:#fff;color:#000;} .card{border:1px solid #999;} }
+</style>
+</head>
+<body>
+<h1>⚔️ Ficha de Personagem — Tormenta 20</h1>
+<div class="sub">Preencha os campos abaixo. Tudo é salvo automaticamente neste navegador.</div>
+
+<div class="buttons">
+<button onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+<button class="secondary" onclick="resetSheet()">♻️ Limpar ficha</button>
+</div>
+
+<div class="card">
+<h2>Identidade</h2>
+<div class="grid g2">
+<div><label>Nome do Personagem</label><input data-key="nome"></div>
+<div><label>Jogador(a)</label><input data-key="jogador"></div>
+<div><label>Raça</label><input data-key="raca"></div>
+<div><label>Classe</label><input data-key="classe"></div>
+<div><label>Nível</label><input data-key="nivel" type="number" min="1" max="20"></div>
+<div><label>Tendência</label><input data-key="tendencia"></div>
+<div><label>Divindade</label><input data-key="divindade"></div>
+<div><label>Origem</label><input data-key="origem"></div>
+<div><label>Tamanho</label><input data-key="tamanho"></div>
+<div><label>Idade</label><input data-key="idade"></div>
+</div>
+</div>
+
+<div class="card">
+<h2>Atributos</h2>
+<div class="grid g6" id="attrs">
+</div>
+</div>
+
+<div class="card">
+<h2>Combate</h2>
+<div class="grid g2">
+<div><label>PV atual / máximo</label><input data-key="pv"></div>
+<div><label>PM atual / máximo</label><input data-key="pm"></div>
+<div><label>Defesa</label><input data-key="defesa" type="number"></div>
+<div><label>Deslocamento</label><input data-key="deslocamento"></div>
+</div>
+</div>
+
+<div class="card overflow">
+<h2>Perícias</h2>
+<table>
+<thead><tr><th>Treinada</th><th>Perícia</th><th>Atrib.</th><th>Outros</th><th>Total</th></tr></thead>
+<tbody id="pericias"></tbody>
+</table>
+</div>
+
+<div class="card">
+<h2>Poderes e Habilidades</h2>
+<textarea data-key="poderes" style="min-height:110px"></textarea>
+</div>
+
+<div class="card">
+<h2>Equipamentos</h2>
+<textarea data-key="equipamentos" style="min-height:90px"></textarea>
+<div class="grid g2" style="margin-top:8px"><div><label>Dinheiro (T$)</label><input data-key="dinheiro"></div></div>
+</div>
+
+<div class="card">
+<h2>Magias e Rituais</h2>
+<textarea data-key="magias" style="min-height:90px"></textarea>
+</div>
+
+<div class="card">
+<h2>Anotações</h2>
+<textarea data-key="anotacoes"></textarea>
+</div>
+
+<script>
+const ATTRS = [["for","Força"],["des","Destreza"],["con","Constituição"],["int","Inteligência"],["sab","Sabedoria"],["car","Carisma"]];
+const PERICIAS = [
+["Acrobacia","des"],["Adestramento","car"],["Artesania","int"],["Atletismo","for"],
+["Atuação","car"],["Cavalgar","des"],["Conhecimento","int"],["Cura","sab"],
+["Diplomacia","car"],["Enganação","car"],["Fortitude","con"],["Furtividade","des"],
+["Guerra","int"],["Iniciativa","des"],["Intimidação","car"],["Intuição","sab"],
+["Investigação","int"],["Jogatina","car"],["Luta","for"],["Misticismo","int"],
+["Nobreza","int"],["Ofício","int"],["Percepção","sab"],["Pilotagem","des"],
+["Pontaria","des"],["Reflexos","des"],["Religião","sab"],["Sobrevivência","sab"],["Vontade","sab"]
+];
+
+const attrsDiv = document.getElementById('attrs');
+ATTRS.forEach(([id,label])=>{
+  const d = document.createElement('div');
+  d.className='attr';
+  d.innerHTML = `<label>${label}</label><input data-key="attr-${id}" data-attr="${id}" type="number" value="10">
+    <div class="mod" id="mod-${id}">+0</div>`;
+  attrsDiv.appendChild(d);
+});
+
+const periciasBody = document.getElementById('pericias');
+PERICIAS.forEach(([nome,attr],i)=>{
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td style="text-align:center"><input type="checkbox" data-key="tr-${i}" data-tr="${i}"></td>
+    <td>${nome}</td><td>${attr.toUpperCase()}</td>
+    <td><input type="number" data-key="out-${i}" data-out="${i}" value="0"></td>
+    <td class="total" id="tot-${i}" data-attr-ref="${attr}">0</td>`;
+  periciasBody.appendChild(tr);
+});
+
+function mod(score){ return Math.floor((score-10)/2); }
+
+function recalcAll(){
+  const mods = {};
+  ATTRS.forEach(([id])=>{
+    const inp = document.querySelector(`[data-attr="${id}"]`);
+    const m = mod(parseInt(inp.value||10,10));
+    mods[id]=m;
+    document.getElementById('mod-'+id).textContent = (m>=0?'+':'')+m;
+  });
+  PERICIAS.forEach(([nome,attr],i)=>{
+    const tr = document.querySelector(`[data-tr="${i}"]`).checked;
+    const out = parseInt(document.querySelector(`[data-out="${i}"]`).value||0,10);
+    const total = mods[attr] + (tr?3:0) + out;
+    document.getElementById('tot-'+i).textContent = (total>=0?'+':'')+total;
+  });
+}
+
+const STORAGE_KEY = 't20-ficha';
+function saveAll(){
+  try{
+    const data = {};
+    document.querySelectorAll('[data-key]').forEach(el=>{
+      data[el.dataset.key] = el.type==='checkbox' ? el.checked : el.value;
+    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }catch(e){ console.warn('Não foi possível salvar:', e); }
+}
+function loadAll(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return;
+    const data = JSON.parse(raw);
+    document.querySelectorAll('[data-key]').forEach(el=>{
+      if(data[el.dataset.key]===undefined) return;
+      if(el.type==='checkbox') el.checked = data[el.dataset.key];
+      else el.value = data[el.dataset.key];
+    });
+  }catch(e){ console.warn('Não foi possível carregar:', e); }
+}
+function resetSheet(){
+  if(!confirm('Tem certeza que deseja limpar toda a ficha?')) return;
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+  document.querySelectorAll('[data-key]').forEach(el=>{
+    if(el.type==='checkbox') el.checked=false;
+    else if(el.dataset.attr) el.value=10;
+    else el.value='';
+  });
+  recalcAll();
+}
+
+document.addEventListener('input', ()=>{ recalcAll(); saveAll(); });
+loadAll();
+recalcAll();
+</script>
+</body>
+</html>
