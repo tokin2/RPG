@@ -1,376 +1,452 @@
 /* ==========================================================================
    Interface e Controladores da Ficha do Personagem (index.html)
+   Compatível com Novas Chaves Legíveis e Chaves Legadas
    ========================================================================== */
 
-function opts(v) {
-  return A.map(function(a) {
-    return '<option value="' + a[0] + '"' + (a[0] === v ? ' selected' : '') + '>' + cap(a[0]) + '</option>';
+function gerarOpcoesAtributosSelect(selecionado) {
+  var selNormalizado = (MAPA_ATRIBUTO_LEGADO && MAPA_ATRIBUTO_LEGADO[selecionado]) || selecionado;
+  return ATRIBUTOS_PADRAO.map(function(attr) {
+    return '<option value="' + attr[0] + '"' + (attr[0] === selNormalizado ? ' selected' : '') + '>' + capitalizar(attr[1]) + '</option>';
   }).join("");
 }
+var opts = gerarOpcoesAtributosSelect; // Alias
 
-function rowHtml(i) {
-  var s = S[i] || ["", "int"];
-  return '<div class="sk"><input type="checkbox" data-k="t' + i + '" id="t' + i + '" aria-label="Treinada"><b id="s' + i + '">0</b><span class="sn"><input data-k="sn' + i + '" value="' + s[0] + '" placeholder="Nova perícia" aria-label="Nome da perícia"><select data-k="sa' + i + '" id="sa' + i + '" aria-label="Atributo">' + opts(s[1]) + '</select></span><input class="o" type="number" data-k="o' + i + '" id="o' + i + '" value="0" aria-label="Outros"><button class="x" data-del="' + i + '" aria-label="Remover perícia" title="Remover">×</button></div>';
+function gerarHtmlLinhaPericia(indice) {
+  var dadosPadrao = PERICIAS_PADRAO[indice] || ["", "inteligencia"];
+  var nome = dadosPadrao[0];
+  var atributo = dadosPadrao[1];
+
+  return '<div class="sk">' +
+    '<input type="checkbox" data-k="pericia_treinada_' + indice + '" id="pericia_treinada_' + indice + '" aria-label="Treinada">' +
+    '<b id="pericia_total_' + indice + '">0</b>' +
+    '<span class="sn">' +
+      '<input data-k="pericia_nome_' + indice + '" value="' + nome + '" placeholder="Nova perícia" aria-label="Nome da perícia">' +
+      '<select data-k="pericia_atributo_' + indice + '" id="pericia_atributo_' + indice + '" aria-label="Atributo">' +
+        gerarOpcoesAtributosSelect(atributo) +
+      '</select>' +
+    '</span>' +
+    '<input class="o" type="number" data-k="pericia_outros_' + indice + '" id="pericia_outros_' + indice + '" value="0" aria-label="Outros">' +
+    '<button class="x" data-del="' + indice + '" aria-label="Remover perícia" title="Remover">×</button>' +
+  '</div>';
 }
+var rowHtml = gerarHtmlLinhaPericia; // Alias
 
-function renderSkills() {
-  var el = document.getElementById("skills");
-  if (el) el.innerHTML = list.map(rowHtml).join("");
+function renderizarPericias() {
+  var container = document.getElementById("skills");
+  if (container) {
+    var lista = listaPericiasAtivas || list;
+    container.innerHTML = lista.map(gerarHtmlLinhaPericia).join("");
+  }
 }
+var renderSkills = renderizarPericias; // Alias
 
-function refresh() {
-  saveList();
-  renderSkills();
-  load();
-  calc();
-  save();
+function recarregarPericias() {
+  salvarListaPericias();
+  renderizarPericias();
+  carregarFicha();
+  calcularFicha();
+  salvarFicha();
 }
+var refresh = recarregarPericias; // Alias
 
-function renderHab() {
-  var el = document.getElementById("habs");
-  if (el) {
-    el.innerHTML = hl.map(function(i, k) {
-      return '<div class="hb"><input data-k="hn' + i + '" placeholder="Nome" aria-label="Nome da habilidade"><input data-k="hd' + i + '" placeholder="1d6" aria-label="Dado de dano"><input data-k="hs' + i + '" list="esc" placeholder="Escala com" aria-label="Escala com"><input data-k="ht' + i + '" list="tip" placeholder="Tipo" aria-label="Tipo"><textarea class="hx" rows="1" data-k="hx' + i + '" placeholder="Descrição" aria-label="Descrição"></textarea><div class="ac"><button type="button" class="x" data-hmv="-1" data-hid="' + i + '" aria-label="Mover para cima" title="Mover para cima"' + (k === 0 ? " disabled" : "") + '>▲</button><button type="button" class="x" data-hmv="1" data-hid="' + i + '" aria-label="Mover para baixo" title="Mover para baixo"' + (k === hl.length - 1 ? " disabled" : "") + '>▼</button><button type="button" class="x" data-hdel="' + i + '" aria-label="Remover linha" title="Remover">×</button></div></div>';
+function renderizarHabilidades() {
+  var container = document.getElementById("habs");
+  if (container) {
+    var listaHabs = ordemHabilidades || hl;
+    container.innerHTML = listaHabs.map(function(idLinha, posicao) {
+      return '<div class="hb">' +
+        '<input data-k="hab_nome_' + idLinha + '" placeholder="Nome" aria-label="Nome da habilidade">' +
+        '<input data-k="hab_dano_' + idLinha + '" placeholder="1d6" aria-label="Dado de dano">' +
+        '<input data-k="hab_escala_' + idLinha + '" list="esc" placeholder="Escala com" aria-label="Escala com">' +
+        '<input data-k="hab_tipo_' + idLinha + '" list="tip" placeholder="Tipo" aria-label="Tipo">' +
+        '<textarea class="hx" rows="1" data-k="hab_descricao_' + idLinha + '" placeholder="Descrição" aria-label="Descrição"></textarea>' +
+        '<div class="ac">' +
+          '<button type="button" class="x" data-hmv="-1" data-hid="' + idLinha + '" aria-label="Mover para cima" title="Mover para cima"' + (posicao === 0 ? " disabled" : "") + '>▲</button>' +
+          '<button type="button" class="x" data-hmv="1" data-hid="' + idLinha + '" aria-label="Mover para baixo" title="Mover para baixo"' + (posicao === listaHabs.length - 1 ? " disabled" : "") + '>▼</button>' +
+          '<button type="button" class="x" data-hdel="' + idLinha + '" aria-label="Remover linha" title="Remover">×</button>' +
+        '</div>' +
+      '</div>';
     }).join("");
   }
 }
+var renderHab = renderizarHabilidades; // Alias
 
-function refreshHab() {
-  renderHab();
-  load();
-  calc();
-  save();
+function recarregarHabilidades() {
+  renderizarHabilidades();
+  carregarFicha();
+  calcularFicha();
+  salvarFicha();
 }
+var refreshHab = recarregarHabilidades; // Alias
 
-// Inicializa blocos da Ficha
-var stonesEl = document.getElementById("stones");
-if (stonesEl) {
-  stonesEl.innerHTML = A.map(function(a) {
-    return '<div class="at">' + FR + '<span class="an' + (a[1].length > 9 ? ' lg' : '') + '">' + a[1].toUpperCase() + '</span><b class="mod" id="m-' + a[0] + '">+0</b><input type="number" data-k="v-' + a[0] + '" id="v-' + a[0] + '" value="10" aria-label="' + a[1] + ' (valor)"><button type="button" class="sp dn" data-step="-1" data-t="v-' + a[0] + '" aria-label="Diminuir ' + a[1] + '">−</button><button type="button" class="sp up" data-step="1" data-t="v-' + a[0] + '" aria-label="Aumentar ' + a[1] + '">+</button></div>';
+// 1. Inicializar pedras de Atributos
+var containerPedras = document.getElementById("stones");
+if (containerPedras) {
+  containerPedras.innerHTML = ATRIBUTOS_PADRAO.map(function(attr) {
+    var idAttr = attr[0];
+    var nomeExtenso = attr[1];
+    return '<div class="at">' +
+      SVG_MOLDURA_ATRIBUTO +
+      '<span class="an' + (nomeExtenso.length > 9 ? ' lg' : '') + '">' + nomeExtenso.toUpperCase() + '</span>' +
+      '<b class="mod" id="mod_' + idAttr + '">+0</b>' +
+      '<input type="number" data-k="atr_' + idAttr + '" id="atr_' + idAttr + '" value="10" aria-label="' + nomeExtenso + ' (valor)">' +
+      '<button type="button" class="sp dn" data-step="-1" data-t="atr_' + idAttr + '" aria-label="Diminuir ' + nomeExtenso + '">−</button>' +
+      '<button type="button" class="sp up" data-step="1" data-t="atr_' + idAttr + '" aria-label="Aumentar ' + nomeExtenso + '">+</button>' +
+    '</div>';
   }).join("");
 }
 
-renderSkills();
-renderHab();
+// 2. Inicializar Perícias e Habilidades
+renderizarPericias();
+renderizarHabilidades();
 
-var invEl = document.getElementById("inv");
-if (invEl) {
-  var iv = "";
+// 3. Inicializar 14 linhas de Inventário
+var containerInventario = document.getElementById("inv");
+if (containerInventario) {
+  var htmlInv = "";
   for (var k = 0; k < 14; k++) {
-    iv += '<div class="inv"><input data-k="in' + k + '"><input type="number" min="0" data-k="iq' + k + '"><input type="number" min="0" step="0.5" data-k="ie' + k + '"></div>';
+    htmlInv += '<div class="inv">' +
+      '<input data-k="item_nome_' + k + '">' +
+      '<input type="number" min="0" data-k="item_qtd_' + k + '">' +
+      '<input type="number" min="0" step="0.5" data-k="item_espaco_' + k + '">' +
+    '</div>';
   }
-  invEl.innerHTML = iv;
+  containerInventario.innerHTML = htmlInv;
 }
 
-// Event Listeners Globais
+// Listeners Globais para salvar automaticamente a cada alteração
 document.addEventListener("input", function() {
-  calc();
-  save();
+  calcularFicha();
+  salvarFicha();
 });
 
 document.addEventListener("change", function() {
-  calc();
-  save();
+  calcularFicha();
+  salvarFicha();
 });
 
-// Tratamento de Imagem do Personagem
-var PIC = "";
-function showPic() {
-  var h = document.querySelector('[data-k="img"]'),
-      v = h ? h.value : "";
-  if (v === PIC) return;
-  PIC = v;
-  var im = document.getElementById("picimg"),
-      ph = document.getElementById("picph");
-  if (v) {
-    im.src = v;
-    im.hidden = false;
-    ph.hidden = true;
+// Imagem do Personagem
+var IMAGEM_ATUAL = "";
+function exibirImagemPersonagem() {
+  var inputOculto = document.querySelector('[data-k="imagem"]') || document.querySelector('[data-k="img"]');
+  var valor = inputOculto ? inputOculto.value : "";
+  if (valor === IMAGEM_ATUAL) return;
+  IMAGEM_ATUAL = valor;
+
+  var imgElemento = document.getElementById("picimg");
+  var placeholder = document.getElementById("picph");
+  if (valor) {
+    imgElemento.src = valor;
+    imgElemento.hidden = false;
+    placeholder.hidden = true;
   } else {
-    im.removeAttribute("src");
-    im.hidden = true;
-    ph.hidden = false;
+    imgElemento.removeAttribute("src");
+    imgElemento.hidden = true;
+    placeholder.hidden = false;
   }
-  document.getElementById("pic").className = "pic" + (v ? " has" : "");
-  document.getElementById("picdel").hidden = !v;
+  document.getElementById("pic").className = "pic" + (valor ? " has" : "");
+  document.getElementById("picdel").hidden = !valor;
 }
+var showPic = exibirImagemPersonagem; // Alias
 
-function setPic(v) {
-  var h = document.querySelector('[data-k="img"]');
-  if (h) {
-    h.value = v;
-    h.dispatchEvent(new Event("input", { bubbles: true }));
+function definirImagemPersonagem(dataUrl) {
+  var inputOculto = document.querySelector('[data-k="imagem"]') || document.querySelector('[data-k="img"]');
+  if (inputOculto) {
+    inputOculto.value = dataUrl;
+    inputOculto.dispatchEvent(new Event("input", { bubbles: true }));
   }
 }
+var setPic = definirImagemPersonagem; // Alias
 
-var picfileEl = document.getElementById("picfile");
-if (picfileEl) {
-  picfileEl.addEventListener("change", function() {
-    var inp = this,
-        f = inp.files && inp.files[0];
-    if (!f) return;
-    var r = new FileReader();
-    r.onload = function() {
-      var im = new Image();
-      im.onload = function() {
-        var sc = Math.min(1, 400 / im.width, 540 / im.height),
-            c = document.createElement("canvas");
-        c.width = Math.max(1, Math.round(im.width * sc));
-        c.height = Math.max(1, Math.round(im.height * sc));
-        var x = c.getContext("2d");
-        x.fillStyle = "#000";
-        x.fillRect(0, 0, c.width, c.height);
-        x.drawImage(im, 0, 0, c.width, c.height);
-        setPic(c.toDataURL("image/jpeg", 0.8));
-        inp.value = "";
+var fileInput = document.getElementById("picfile");
+if (fileInput) {
+  fileInput.addEventListener("change", function() {
+    var input = this, arquivo = input.files && input.files[0];
+    if (!arquivo) return;
+    var reader = new FileReader();
+    reader.onload = function() {
+      var img = new Image();
+      img.onload = function() {
+        var escala = Math.min(1, 400 / img.width, 540 / img.height);
+        var canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(img.width * escala));
+        canvas.height = Math.max(1, Math.round(img.height * escala));
+        var ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        definirImagemPersonagem(canvas.toDataURL("image/jpeg", 0.8));
+        input.value = "";
       };
-      im.onerror = function() { inp.value = ""; };
-      im.src = r.result;
+      img.onerror = function() { input.value = ""; };
+      img.src = reader.result;
     };
-    r.readAsDataURL(f);
+    reader.readAsDataURL(arquivo);
   });
 }
 
-var picdelEl = document.getElementById("picdel");
-if (picdelEl) {
-  picdelEl.onclick = function() { setPic(""); };
+var btnRemoverImg = document.getElementById("picdel");
+if (btnRemoverImg) {
+  btnRemoverImg.onclick = function() { definirImagemPersonagem(""); };
 }
 
-// Remoção e Adição de Perícias
+// Remover Perícia
 document.addEventListener("click", function(e) {
-  var d = e.target.closest && e.target.closest("[data-del]");
-  if (!d) return;
-  save();
-  var id = +d.dataset.del;
-  list = list.filter(function(x) { return x !== id; });
-  refresh();
+  var botao = e.target.closest && e.target.closest("[data-del]");
+  if (!botao) return;
+  salvarFicha();
+  var idRemover = +botao.dataset.del;
+  listaPericiasAtivas = listaPericiasAtivas.filter(function(x) { return x !== idRemover; });
+  list = listaPericiasAtivas;
+  recarregarPericias();
 });
 
-var addskEl = document.getElementById("addsk");
-if (addskEl) {
-  addskEl.onclick = function() {
-    save();
-    var id = Math.max.apply(null, list.concat([99])) + 1;
-    list.push(id);
-    refresh();
-    var el = document.querySelector('[data-k="sn' + id + '"]');
-    if (el) el.focus();
+// Adicionar Perícia
+var btnAddPericia = document.getElementById("addsk");
+if (btnAddPericia) {
+  btnAddPericia.onclick = function() {
+    salvarFicha();
+    var novoId = Math.max.apply(null, listaPericiasAtivas.concat([99])) + 1;
+    listaPericiasAtivas.push(novoId);
+    list = listaPericiasAtivas;
+    recarregarPericias();
+    var campoNome = document.querySelector('[data-k="pericia_nome_' + novoId + '"]');
+    if (campoNome) campoNome.focus();
   };
 }
 
-function sortSk() {
-  save();
-  function nm(i) {
-    var e = document.querySelector('[data-k="sn' + i + '"]');
-    return e ? e.value : (S[i] ? S[i][0] : "");
+// Ordenar Perícias Alfabeticamente
+function ordenarPericiasAZ() {
+  salvarFicha();
+  function extrairNome(indice) {
+    var el = document.querySelector('[data-k="pericia_nome_' + indice + '"]');
+    return el ? el.value : (PERICIAS_PADRAO[indice] ? PERICIAS_PADRAO[indice][0] : "");
   }
-  list.sort(function(a, b) {
-    var x = nm(a), y = nm(b);
-    if (!x && y) return 1;
-    if (x && !y) return -1;
-    return x.localeCompare(y, "pt-BR", { sensitivity: "base" });
+  listaPericiasAtivas.sort(function(a, b) {
+    var nomeA = extrairNome(a), nomeB = extrairNome(b);
+    if (!nomeA && nomeB) return 1;
+    if (nomeA && !nomeB) return -1;
+    return nomeA.localeCompare(nomeB, "pt-BR", { sensitivity: "base" });
   });
-  refresh();
+  list = listaPericiasAtivas;
+  recarregarPericias();
 }
+var srtskBtn = document.getElementById("srtsk");
+if (srtskBtn) srtskBtn.onclick = ordenarPericiasAZ;
 
-var srtskEl = document.getElementById("srtsk");
-if (srtskEl) srtskEl.onclick = sortSk;
-
-var rstskEl = document.getElementById("rstsk");
-if (rstskEl) {
-  rstskEl.onclick = function() {
-    save();
-    DEF.forEach(function(i) {
-      if (list.indexOf(i) < 0) list.push(i);
+// Restaurar Perícias Padrão
+var rstskBtn = document.getElementById("rstsk");
+if (rstskBtn) {
+  rstskBtn.onclick = function() {
+    salvarFicha();
+    INDICES_PERICIAS_INICIAIS.forEach(function(i) {
+      if (listaPericiasAtivas.indexOf(i) < 0) listaPericiasAtivas.push(i);
     });
-    sortSk();
+    list = listaPericiasAtivas;
+    ordenarPericiasAZ();
   };
 }
 
-// Reordenação e Exclusão de Habilidades
+// Reordenar Habilidades (Mover cima / baixo)
 document.addEventListener("click", function(e) {
   var b = e.target.closest && e.target.closest("[data-hmv]");
   if (!b || b.disabled) return;
-  save();
+  salvarFicha();
   var id = +b.dataset.hid,
-      k = hl.indexOf(id),
-      j = k + (+b.dataset.hmv);
-  if (k < 0 || j < 0 || j >= hl.length) return;
-  var t = hl[k];
-  hl[k] = hl[j];
-  hl[j] = t;
-  refreshHab();
+      posicaoAtual = ordemHabilidades.indexOf(id),
+      novaPosicao = posicaoAtual + (+b.dataset.hmv);
+  if (posicaoAtual < 0 || novaPosicao < 0 || novaPosicao >= ordemHabilidades.length) return;
+  var temporario = ordemHabilidades[posicaoAtual];
+  ordemHabilidades[posicaoAtual] = ordemHabilidades[novaPosicao];
+  ordemHabilidades[novaPosicao] = temporario;
+  hl = ordemHabilidades;
+  recarregarHabilidades();
 });
 
+// Remover Linha de Habilidade
 document.addEventListener("click", function(e) {
   var b = e.target.closest && e.target.closest("[data-hdel]");
   if (!b) return;
-  save();
-  var id = +b.dataset.hdel;
-  hl = hl.filter(function(x) { return x !== id; });
-  refreshHab();
+  salvarFicha();
+  var idRemover = +b.dataset.hdel;
+  ordemHabilidades = ordemHabilidades.filter(function(x) { return x !== idRemover; });
+  hl = ordemHabilidades;
+  recarregarHabilidades();
 });
 
-var addhbEl = document.getElementById("addhb");
-if (addhbEl) {
-  addhbEl.onclick = function() {
-    save();
-    hl.push(Math.max.apply(null, hl.concat([-1])) + 1);
-    refreshHab();
-    var el = document.querySelector('[data-k="hn' + hl[hl.length - 1] + '"]');
-    if (el) el.focus();
+// Adicionar Linha de Habilidade
+var btnAddHab = document.getElementById("addhb");
+if (btnAddHab) {
+  btnAddHab.onclick = function() {
+    salvarFicha();
+    var novoId = Math.max.apply(null, ordemHabilidades.concat([-1])) + 1;
+    ordemHabilidades.push(novoId);
+    hl = ordemHabilidades;
+    recarregarHabilidades();
+    var campoNome = document.querySelector('[data-k="hab_nome_' + novoId + '"]');
+    if (campoNome) campoNome.focus();
   };
 }
 
-// Botões de incremento/decremento com data-step
+// Steppers (Botões + / -)
 document.addEventListener("click", function(e) {
-  var b = e.target.closest && e.target.closest("[data-step]");
-  if (!b) return;
-  var i = document.getElementById(b.dataset.t);
-  if (!i) return;
-  var v = parseInt(i.value, 10);
-  if (isNaN(v)) v = b.dataset.t.indexOf("v-") === 0 ? 10 : 0;
-  var n = v + parseInt(b.dataset.step, 10);
-  if (b.dataset.t.indexOf("v-") !== 0) n = Math.max(0, n);
-  i.value = n;
-  i.dispatchEvent(new Event("input", { bubbles: true }));
+  var btn = e.target.closest && e.target.closest("[data-step]");
+  if (!btn) return;
+  var targetId = btn.dataset.t;
+  var input = document.getElementById(targetId);
+  if (!input) return;
+
+  var valor = parseInt(input.value, 10);
+  if (isNaN(valor)) valor = (targetId.indexOf("atr_") === 0 || targetId.indexOf("v-") === 0) ? 10 : 0;
+  var novoValor = valor + parseInt(btn.dataset.step, 10);
+  if (targetId.indexOf("atr_") !== 0 && targetId.indexOf("v-") !== 0) novoValor = Math.max(0, novoValor);
+
+  input.value = novoValor;
+  input.dispatchEvent(new Event("input", { bubbles: true }));
 });
 
 // Ações do Dado da Sorte
-var dusarEl = document.getElementById("dusar");
-if (dusarEl) {
-  dusarEl.onclick = function() {
-    var e = document.getElementById("dado"),
-        v = parseInt(e.value, 10);
-    if (isNaN(v)) v = 3;
-    if (v <= 0) return;
-    e.value = v - 1;
-    e.dispatchEvent(new Event("input", { bubbles: true }));
+var btnUsarDado = document.getElementById("dusar");
+if (btnUsarDado) {
+  btnUsarDado.onclick = function() {
+    var inputDado = document.getElementById("dado");
+    var valor = parseInt(inputDado.value, 10);
+    if (isNaN(valor)) valor = 3;
+    if (valor <= 0) return;
+    inputDado.value = valor - 1;
+    inputDado.dispatchEvent(new Event("input", { bubbles: true }));
   };
 }
 
-function twoStep(id, txt, fn) {
-  var b = document.getElementById(id);
-  if (!b) return;
-  var o = b.textContent, t = null;
-  b.onclick = function() {
-    if (t) {
-      clearTimeout(t);
-      t = null;
-      b.textContent = o;
-      fn();
+// Confirmação de Ação em Dois Passos
+function confirmacaoEmDoisPassos(idElemento, textoConfirmacao, aoConfirmar) {
+  var btn = document.getElementById(idElemento);
+  if (!btn) return;
+  var textoOriginal = btn.textContent, timer = null;
+  btn.onclick = function() {
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+      btn.textContent = textoOriginal;
+      aoConfirmar();
       return;
     }
-    b.textContent = txt;
-    t = setTimeout(function() {
-      t = null;
-      b.textContent = o;
+    btn.textContent = textoConfirmacao;
+    timer = setTimeout(function() {
+      timer = null;
+      btn.textContent = textoOriginal;
     }, 3500);
   };
 }
+var twoStep = confirmacaoEmDoisPassos; // Alias
 
-twoStep("drec", "Confirmar?", function() {
-  var e = document.getElementById("dado");
-  if (e) {
-    e.value = 3;
-    e.dispatchEvent(new Event("input", { bubbles: true }));
+confirmacaoEmDoisPassos("drec", "Confirmar?", function() {
+  var inputDado = document.getElementById("dado");
+  if (inputDado) {
+    inputDado.value = 3;
+    inputDado.dispatchEvent(new Event("input", { bubbles: true }));
   }
 });
 
-var printEl = document.getElementById("print");
-if (printEl) {
-  printEl.onclick = function() { window.print(); };
+var btnPrint = document.getElementById("print");
+if (btnPrint) {
+  btnPrint.onclick = function() { window.print(); };
 }
 
-twoStep("clear", "Tem certeza?", function() {
-  var c = CODE;
-  fetch(SB_URL + "/rest/v1/fichas?id=eq." + encodeURIComponent(c), {
+confirmacaoEmDoisPassos("clear", "Tem certeza?", function() {
+  var cod = CODIGO_FICHA;
+  fetch(URL_SUPABASE + "/rest/v1/fichas?id=eq." + encodeURIComponent(cod), {
     method: "DELETE",
-    headers: { apikey: SB_KEY }
+    headers: { apikey: CHAVE_PUBLICA_SUPABASE }
   })
   .catch(function() {})
   .then(function() {
-    [KEY, LKEY, "ficha-tormenta-synced", "ficha-tormenta-code"].forEach(function(k) {
-      try { localStorage.removeItem(k); } catch (x) {}
+    [CHAVE_LOCAL_FICHA, CHAVE_LOCAL_PERICIAS, CHAVE_LOCAL_SINCRONIZADA, "ficha-tormenta-code"].forEach(function(k) {
+      try { localStorage.removeItem(k); } catch (e) {}
     });
     location.reload();
   });
 });
 
-load();
-calc();
+// Carregamento inicial da ficha
+carregarFicha();
+calcularFicha();
 
-// Inicialização de Modo (Mestre x Jogador)
-if (VIEW) {
-  var cb = document.getElementById("codebox");
-  if (cb) cb.style.display = "none";
-  var clr = document.getElementById("clear");
-  if (clr) clr.style.display = "none";
+// Configuração do Modo (Mestre x Jogador)
+if (MODO_VISUALIZACAO) {
+  var boxCodigo = document.getElementById("codebox");
+  if (boxCodigo) boxCodigo.style.display = "none";
+  var btnLimpar = document.getElementById("clear");
+  if (btnLimpar) btnLimpar.style.display = "none";
 
-  function lock(on) {
-    EDIT = !on;
-    var sheetEl = document.getElementById("sheet");
-    if (sheetEl) sheetEl.inert = on;
-    var b = document.getElementById("mbar");
-    if (b) {
-      b.hidden = false;
-      b.className = "mbar" + (on ? "" : " on");
+  function bloquearEdicaoModoMestre(bloquear) {
+    MODO_EDICAO = !bloquear;
+    EDIT = MODO_EDICAO;
+    var fichaContainer = document.getElementById("sheet");
+    if (fichaContainer) fichaContainer.inert = bloquear;
+    var barraMestre = document.getElementById("mbar");
+    if (barraMestre) {
+      barraMestre.hidden = false;
+      barraMestre.className = "mbar" + (bloquear ? "" : " on");
     }
-    var mtxt = document.getElementById("mtxt");
-    if (mtxt) {
-      mtxt.textContent = on ? "Modo mestre: somente leitura. A ficha do jogador não será alterada." : "Modo mestre: edição liberada. O que você mudar vai para a ficha do jogador.";
+    var textoMestre = document.getElementById("mtxt");
+    if (textoMestre) {
+      textoMestre.textContent = bloquear
+        ? "Modo mestre: somente leitura. A ficha do jogador não será alterada."
+        : "Modo mestre: edição liberada. O que você mudar vai para a ficha do jogador.";
     }
-    var mtog = document.getElementById("mtog");
-    if (mtog) {
-      mtog.textContent = on ? "Liberar edição" : "Travar edição";
+    var btnToggle = document.getElementById("mtog");
+    if (btnToggle) {
+      btnToggle.textContent = bloquear ? "Liberar edição" : "Travar edição";
     }
   }
 
-  var mtogEl = document.getElementById("mtog");
-  if (mtogEl) {
-    mtogEl.onclick = function() { lock(EDIT); };
+  var btnToggleEdicao = document.getElementById("mtog");
+  if (btnToggleEdicao) {
+    btnToggleEdicao.onclick = function() { bloquearEdicaoModoMestre(MODO_EDICAO); };
   }
-  var RO = !!QS.get("ro");
-  lock(!QS.get("e") || RO);
-  if (RO && mtogEl) mtogEl.hidden = true;
+  var somenteLeitura = Boolean(PARAMETROS_URL.get("ro"));
+  bloquearEdicaoModoMestre(!PARAMETROS_URL.get("e") || somenteLeitura);
+  if (somenteLeitura && btnToggleEdicao) btnToggleEdicao.hidden = true;
 
-  st("Modo mestre: carregando…");
-  sync(true);
+  atualizarStatusNuvem("Modo mestre: carregando…");
+  sincronizarFicha(true);
 } else {
-  var codeEl = document.getElementById("code");
-  if (codeEl) codeEl.textContent = CODE;
-  var gm = lget("ficha-tormenta-msg");
-  if (gm) {
-    try { localStorage.removeItem("ficha-tormenta-msg"); } catch (x) {}
-    st(gm);
+  var spanCodigo = document.getElementById("code");
+  if (spanCodigo) spanCodigo.textContent = CODIGO_FICHA;
+  var msgMestre = obterArmazenamentoLocal("ficha-tormenta-msg");
+  if (msgMestre) {
+    try { localStorage.removeItem("ficha-tormenta-msg"); } catch (e) {}
+    atualizarStatusNuvem(msgMestre);
   } else {
-    st("Alterações são salvas neste aparelho e na nuvem.");
+    atualizarStatusNuvem("Alterações são salvas neste aparelho e na nuvem.");
   }
-  sync(true);
+  sincronizarFicha(true);
 
-  var chcodeEl = document.getElementById("chcode");
-  if (chcodeEl) {
-    chcodeEl.onclick = function() {
-      var c = (prompt("Digite o código da ficha que você quer carregar neste aparelho:") || "").trim();
-      if (!c || c === CODE) return;
-      pull(c, function(d) {
-        if (!d) {
-          st("Código não encontrado");
+  var btnTrocarCodigo = document.getElementById("chcode");
+  if (btnTrocarCodigo) {
+    btnTrocarCodigo.onclick = function() {
+      var digitado = (prompt("Digite o código da ficha que você quer carregar neste aparelho:") || "").trim();
+      if (!digitado || digitado === CODIGO_FICHA) return;
+      buscarFichaNuvem(digitado, function(dadosEncontrados) {
+        if (!dadosEncontrados) {
+          atualizarStatusNuvem("Código não encontrado");
           return;
         }
         if (!confirm("Isso troca a ficha deste aparelho pela ficha desse código. Continuar?")) return;
-        hflush();
-        CODE = c;
-        lset("ficha-tormenta-code", CODE);
-        document.getElementById("code").textContent = CODE;
-        applyCloud(d);
-        save();
+        descarregarHistorico();
+        CODIGO_FICHA = digitado;
+        CODE = CODIGO_FICHA;
+        definirArmazenamentoLocal("ficha-tormenta-code", CODIGO_FICHA);
+        document.getElementById("code").textContent = CODIGO_FICHA;
+        aplicarDadosNuvem(dadosEncontrados);
+        salvarFicha();
       });
     };
   }
 }
 
-// Polling de sincronização a cada 10 segundos
+// Polling de sincronização automática a cada 10 segundos
 setInterval(function() {
-  sync(false);
+  sincronizarFicha(false);
 }, 10000);

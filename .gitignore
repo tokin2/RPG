@@ -21,3 +21,4 @@ skills-lock.json
 # Backups e arquivos temporários
 *.bak
 *.tmp
+backup_*.json

@@ -1,272 +1,391 @@
 /* ==========================================================================
    Sincronização em Nuvem e Histórico de Alterações (Supabase)
+   Compatível com Novas Chaves Legíveis e Chaves Legadas
    ========================================================================== */
 
-var pending = false;
-var tm = null;
-var HQ = {};
-var HQS = [];
-var HT = null;
+var pendenteSalvamento = false;
+var timerSalvamento = null;
+var filaHistoricoMap = {};
+var filaHistoricoArray = [];
+var timerHistorico = null;
 
-function st(t) {
-  var e = document.getElementById("cloud");
-  if (e) e.textContent = t;
+// Aliases para retrocompatibilidade
+var pending = pendenteSalvamento;
+var tm = timerSalvamento;
+var HQ = filaHistoricoMap;
+var HQS = filaHistoricoArray;
+var HT = timerHistorico;
+
+function atualizarStatusNuvem(texto) {
+  var el = document.getElementById("cloud");
+  if (el) el.textContent = texto;
 }
+var st = atualizarStatusNuvem; // Alias
 
-function hclone(o) {
-  return o ? JSON.parse(JSON.stringify(o)) : null;
+function clonarObjeto(obj) {
+  return obj ? JSON.parse(JSON.stringify(obj)) : null;
 }
+var hclone = clonarObjeto; // Alias
 
-function hv(v) {
-  if (v === true) return "sim";
-  if (v === false) return "não";
-  v = (v == null ? "" : String(v)).trim();
-  if (!v) return "—";
-  return v.length > 80 ? v.slice(0, 80) + "…" : v;
+function formatarValorHistorico(valor) {
+  if (valor === true) return "sim";
+  if (valor === false) return "não";
+  valor = (valor == null ? "" : String(valor)).trim();
+  if (!valor) return "—";
+  return valor.length > 80 ? valor.slice(0, 80) + "…" : valor;
 }
+var hv = formatarValorHistorico; // Alias
 
-function sname(d, i) {
-  return (d && d["sn" + i]) || (S[i] ? S[i][0] : "") || "sem nome";
+function obterNomePericiaPorIndice(dados, indice) {
+  return (dados && (dados["pericia_nome_" + indice] || dados["sn" + indice])) ||
+         (PERICIAS_PADRAO[indice] ? PERICIAS_PADRAO[indice][0] : "") ||
+         "sem nome";
 }
+var sname = obterNomePericiaPorIndice; // Alias
 
-function hname(d, i) {
-  return (d && d["hn" + i]) || "sem nome";
+function obterNomeHabilidadePorIndice(dados, indice) {
+  return (dados && (dados["hab_nome_" + indice] || dados["hn" + indice])) || "sem nome";
 }
+var hname = obterNomeHabilidadePorIndice; // Alias
 
-function attrName(c) {
-  var a = A.filter(function(x) { return x[0] === c; })[0];
-  return a ? a[1] : c;
+function obterNomeAtributoPorCodigo(cod) {
+  var codNormalizado = (MAPA_ATRIBUTO_LEGADO && MAPA_ATRIBUTO_LEGADO[cod]) || cod;
+  var attr = ATRIBUTOS_PADRAO.filter(function(x) { return x[0] === codNormalizado; })[0];
+  return attr ? attr[1] : cod;
 }
+var attrName = obterNomeAtributoPorCodigo; // Alias
 
-function hlabel(k, N) {
+function obterRotuloHistorico(chave, dadosNovos) {
   var m;
-  if (HNAME[k]) return HNAME[k];
-  if (m = /^v-(.+)$/.exec(k)) return attrName(m[1]) + " (valor)";
-  if (m = /^t(\d+)$/.exec(k)) return "Perícia treinada: " + sname(N, m[1]);
-  if (m = /^sn(\d+)$/.exec(k)) return "Perícia renomeada";
-  if (m = /^sa(\d+)$/.exec(k)) return "Atributo da perícia " + sname(N, m[1]);
-  if (m = /^o(\d+)$/.exec(k)) return "Outros da perícia " + sname(N, m[1]);
-  if (m = /^(in|iq|ie)(\d+)$/.exec(k)) {
-    return "Inventário, linha " + (+m[2] + 1) + " (" + { in: "item", iq: "quantidade", ie: "espaços" }[m[1]] + ")";
+  if (DICIONARIO_NOMES_HISTORICO[chave]) return DICIONARIO_NOMES_HISTORICO[chave];
+
+  // Atributos (novos: atr_forca ou legados: v-for)
+  if ((m = /^atr_(.+)$/.exec(chave))) return obterNomeAtributoPorCodigo(m[1]) + " (valor)";
+  if ((m = /^v-(.+)$/.exec(chave))) return obterNomeAtributoPorCodigo(m[1]) + " (valor)";
+
+  // Perícias
+  if ((m = /^pericia_treinada_(\d+)$/.exec(chave)) || (m = /^t(\d+)$/.exec(chave))) {
+    return "Perícia treinada: " + obterNomePericiaPorIndice(dadosNovos, m[1]);
   }
-  if (m = /^h([ndstx])(\d+)$/.exec(k)) {
-    return "Habilidade «" + hname(N, m[2]) + "»: " + { n: "nome", d: "dano", s: "escala com", t: "tipo", x: "descrição" }[m[1]];
+  if ((m = /^pericia_nome_(\d+)$/.exec(chave)) || (m = /^sn(\d+)$/.exec(chave))) {
+    return "Perícia renomeada";
   }
-  return k;
+  if ((m = /^pericia_atributo_(\d+)$/.exec(chave)) || (m = /^sa(\d+)$/.exec(chave))) {
+    return "Atributo da perícia " + obterNomePericiaPorIndice(dadosNovos, m[1]);
+  }
+  if ((m = /^pericia_outros_(\d+)$/.exec(chave)) || (m = /^o(\d+)$/.exec(chave))) {
+    return "Outros da perícia " + obterNomePericiaPorIndice(dadosNovos, m[1]);
+  }
+
+  // Inventário
+  if ((m = /^item_(nome|qtd|espaco)_(\d+)$/.exec(chave))) {
+    var tiposItem = { nome: "item", qtd: "quantidade", espaco: "espaços" };
+    return "Inventário, linha " + (+m[2] + 1) + " (" + tiposItem[m[1]] + ")";
+  }
+  if ((m = /^(in|iq|ie)(\d+)$/.exec(chave))) {
+    var tiposItemLeg = { in: "item", iq: "quantidade", ie: "espaços" };
+    return "Inventário, linha " + (+m[2] + 1) + " (" + tiposItemLeg[m[1]] + ")";
+  }
+
+  // Habilidades
+  if ((m = /^hab_(nome|dano|escala|tipo|descricao)_(\d+)$/.exec(chave))) {
+    var tiposHab = { nome: "nome", dano: "dano", escala: "escala com", tipo: "tipo", descricao: "descrição" };
+    return "Habilidade «" + obterNomeHabilidadePorIndice(dadosNovos, m[2]) + "»: " + tiposHab[m[1]];
+  }
+  if ((m = /^h([ndstx])(\d+)$/.exec(chave))) {
+    var tiposHabLeg = { n: "nome", d: "dano", s: "escala com", t: "tipo", x: "descrição" };
+    return "Habilidade «" + obterNomeHabilidadePorIndice(dadosNovos, m[2]) + "»: " + tiposHabLeg[m[1]];
+  }
+
+  return chave;
 }
+var hlabel = obterRotuloHistorico; // Alias
 
-function hdiff(O, N) {
-  if (!O) return [{ campo: "Ficha", de: "—", para: "criada", s: 1 }];
-  var ch = [], legacy = !O._m2, addS = [], addH = [];
+function calcularDiferencasHistorico(anterior, novo) {
+  if (!anterior) return [{ campo: "Ficha", de: "—", para: "criada", s: 1 }];
+  var mudancas = [];
+  var adicionadasPericias = [];
+  var adicionadasHabilidades = [];
 
-  function sets(key, fn, lab) {
-    if (!Array.isArray(O[key]) || !Array.isArray(N[key])) return;
-    N[key].forEach(function(i) {
-      if (O[key].indexOf(i) < 0) {
-        fn(i);
-        ch.push({ campo: lab + " adicionada", de: "—", para: key === "_list" ? sname(N, i) : hname(N, i), s: 1 });
+  // 1. Diferenças estruturais nas listas
+  function verificarMudancasLista(chaveNova, chaveLegada, coletor, rotuloItem, nomeFn) {
+    var arrAnt = (Array.isArray(anterior[chaveNova]) ? anterior[chaveNova] : anterior[chaveLegada]) || [];
+    var arrNov = (Array.isArray(novo[chaveNova]) ? novo[chaveNova] : novo[chaveLegada]) || [];
+
+    arrNov.forEach(function(item) {
+      if (arrAnt.indexOf(item) < 0) {
+        coletor(item);
+        mudancas.push({
+          campo: rotuloItem + " adicionada",
+          de: "—",
+          para: nomeFn(novo, item),
+          s: 1
+        });
       }
     });
-    O[key].forEach(function(i) {
-      if (N[key].indexOf(i) < 0) {
-        ch.push({ campo: lab + " removida", de: key === "_list" ? sname(O, i) : hname(O, i), para: "—", s: 1 });
+
+    arrAnt.forEach(function(item) {
+      if (arrNov.indexOf(item) < 0) {
+        mudancas.push({
+          campo: rotuloItem + " removida",
+          de: nomeFn(anterior, item),
+          para: "—",
+          s: 1
+        });
       }
     });
-    if (O[key].length === N[key].length && O[key].join() !== N[key].join() && N[key].every(function(i) { return O[key].indexOf(i) >= 0; })) {
-      ch.push({ campo: "Ordem das " + (key === "_list" ? "perícias" : "habilidades"), de: "—", para: "alterada", s: 1 });
-    }
   }
 
-  sets("_list", function(i) { addS.push(String(i)); }, "Perícia");
-  if (!legacy) sets("_hl", function(i) { addH.push(String(i)); }, "Habilidade");
+  verificarMudancasLista("_pericias_ativas", "_list", function(i) { adicionadasPericias.push(String(i)); }, "Perícia", obterNomePericiaPorIndice);
+  verificarMudancasLista("_habilidades_ordem", "_hl", function(i) { adicionadasHabilidades.push(String(i)); }, "Habilidade", obterNomeHabilidadePorIndice);
 
-  Object.keys(N).forEach(function(k) {
-    if (k.charAt(0) === "_") return;
+  // 2. Diferenças campo a campo
+  Object.keys(novo).forEach(function(chave) {
+    if (chave.charAt(0) === "_") return;
+
     var m;
-    if (legacy && /^h[ndstx]\d+$/.test(k)) return;
-    if ((m = /^h[ndstx](\d+)$/.exec(k)) && addH.indexOf(m[1]) >= 0) return;
-    if ((m = /^(?:t|sn|sa|o)(\d+)$/.exec(k)) && addS.indexOf(m[1]) >= 0) return;
+    if ((m = /^hab_(?:nome|dano|escala|tipo|descricao)_(\d+)$/.exec(chave)) && adicionadasHabilidades.indexOf(m[1]) >= 0) return;
+    if ((m = /^pericia_(?:treinada|nome|atributo|outros)_(\d+)$/.exec(chave)) && adicionadasPericias.indexOf(m[1]) >= 0) return;
 
-    var nv = N[k], ov = O[k];
-    if (ov === undefined) {
-      var el = document.querySelector('[data-k="' + k + '"]');
-      if (!el || el.tagName === "SELECT") return;
-      ov = el.type === "checkbox" ? el.defaultChecked : el.defaultValue;
+    var valorNovo = novo[chave];
+    var valorAntigo = anterior[chave];
+
+    // Fallback para chave legada se no anterior ainda estava no padrão antigo
+    if (valorAntigo === undefined && typeof converterChaveParaLegado === "function") {
+      valorAntigo = anterior[converterChaveParaLegado(chave)];
     }
-    if (String(ov) === String(nv)) return;
-    if (k === "img") {
-      ch.push({ campo: "Imagem", de: ov ? "imagem anterior" : "nenhuma", para: nv ? "nova imagem" : "removida" });
+
+    if (valorAntigo === undefined) {
+      var elemento = document.querySelector('[data-k="' + chave + '"]');
+      if (!elemento || elemento.tagName === "SELECT") return;
+      valorAntigo = elemento.type === "checkbox" ? elemento.defaultChecked : elemento.defaultValue;
+    }
+
+    if (String(valorAntigo) === String(valorNovo)) return;
+
+    if (chave === "imagem" || chave === "img") {
+      mudancas.push({
+        campo: "Imagem",
+        de: valorAntigo ? "imagem anterior" : "nenhuma",
+        para: valorNovo ? "nova imagem" : "removida"
+      });
       return;
     }
-    if (/^sa\d+$/.test(k)) {
-      ov = attrName(ov);
-      nv = attrName(nv);
+
+    if (/^pericia_atributo_\d+$/.test(chave) || /^sa\d+$/.test(chave)) {
+      valorAntigo = obterNomeAtributoPorCodigo(valorAntigo);
+      valorNovo = obterNomeAtributoPorCodigo(valorNovo);
     }
-    ch.push({ campo: hlabel(k, N), de: hv(ov), para: hv(nv) });
+
+    mudancas.push({
+      campo: obterRotuloHistorico(chave, novo),
+      de: formatarValorHistorico(valorAntigo),
+      para: formatarValorHistorico(valorNovo)
+    });
   });
 
-  return ch.slice(0, 40);
+  return mudancas.slice(0, 40);
 }
+var hdiff = calcularDiferencasHistorico; // Alias
 
-function hqAdd(list) {
-  list.forEach(function(c) {
-    if (c.s) {
-      HQS.push(c);
+function adicionarFilaHistorico(lista) {
+  lista.forEach(function(item) {
+    if (item.s) {
+      filaHistoricoArray.push(item);
       return;
     }
-    var e = HQ[c.campo];
-    if (e) {
-      e.para = c.para;
-      if (e.de === e.para) delete HQ[c.campo];
+    var existente = filaHistoricoMap[item.campo];
+    if (existente) {
+      existente.para = item.para;
+      if (existente.de === existente.para) delete filaHistoricoMap[item.campo];
     } else {
-      HQ[c.campo] = { campo: c.campo, de: c.de, para: c.para };
+      filaHistoricoMap[item.campo] = { campo: item.campo, de: item.de, para: item.para };
     }
   });
-  clearTimeout(HT);
-  HT = setTimeout(hflush, 20000);
+  clearTimeout(timerHistorico);
+  timerHistorico = setTimeout(descarregarHistorico, 20000);
 }
+var hqAdd = adicionarFilaHistorico; // Alias
 
-function hflush() {
-  clearTimeout(HT);
-  var arr = Object.keys(HQ).map(function(k) { return HQ[k]; }).concat(HQS);
-  HQ = {};
-  HQS = [];
-  if (!arr.length) return;
+function descarregarHistorico() {
+  clearTimeout(timerHistorico);
+  var itens = Object.keys(filaHistoricoMap).map(function(k) { return filaHistoricoMap[k]; }).concat(filaHistoricoArray);
+  filaHistoricoMap = {};
+  filaHistoricoArray = [];
+  if (!itens.length) return;
 
-  arr = arr.slice(0, 60).map(function(c) {
+  var lote = itens.slice(0, 60).map(function(c) {
     return { campo: c.campo, de: c.de, para: c.para };
   });
 
   try {
-    fetch(SB_URL + "/rest/v1/historico", {
+    fetch(URL_SUPABASE + "/rest/v1/historico", {
       method: "POST",
       keepalive: true,
       headers: {
-        apikey: SB_KEY,
+        apikey: CHAVE_PUBLICA_SUPABASE,
         "Content-Type": "application/json",
         Prefer: "return=minimal"
       },
       body: JSON.stringify({
-        ficha_id: CODE,
-        nome: (MEM && MEM.nome) || "",
-        autor: VIEW ? "mestre" : "jogador",
-        mudancas: arr
+        ficha_id: CODIGO_FICHA,
+        nome: (MEMORIA_FICHA && MEMORIA_FICHA.nome) || "",
+        autor: MODO_VISUALIZACAO ? "mestre" : "jogador",
+        mudancas: lote
       })
     }).catch(function() {});
-  } catch (x) {}
+  } catch (e) {}
 }
+var hflush = descarregarHistorico; // Alias
 
-function onPushed(snap) {
-  if (BASEOK) {
-    var ch = hdiff(BASE, snap);
-    if (ch.length) hqAdd(ch);
+function aoConcluirEnvioNuvem(snapshot) {
+  if (DADOS_BASE_PRONTOS) {
+    var diferencas = calcularDiferencasHistorico(DADOS_BASE_SINCRONIZACAO, snapshot);
+    if (diferencas.length) adicionarFilaHistorico(diferencas);
   }
-  BASE = hclone(snap);
-  BASEOK = true;
+  DADOS_BASE_SINCRONIZACAO = clonarObjeto(snapshot);
+  DADOS_BASE_PRONTOS = true;
+  BASE = DADOS_BASE_SINCRONIZACAO;
+  BASEOK = DADOS_BASE_PRONTOS;
 }
+var onPushed = aoConcluirEnvioNuvem; // Alias
 
-window.addEventListener("pagehide", hflush);
+window.addEventListener("pagehide", descarregarHistorico);
 document.addEventListener("visibilitychange", function() {
-  if (document.visibilityState === "hidden") hflush();
+  if (document.visibilityState === "hidden") descarregarHistorico();
 });
 
-function cloudPush() {
-  pending = true;
-  clearTimeout(tm);
-  st("Salvando…");
-  tm = setTimeout(doPush, 900);
+function enviarParaNuvemDebounced() {
+  pendenteSalvamento = true;
+  clearTimeout(timerSalvamento);
+  atualizarStatusNuvem("Salvando…");
+  timerSalvamento = setTimeout(executarEnvioNuvem, 900);
 }
+var cloudPush = enviarParaNuvemDebounced; // Alias
 
-function doPush() {
-  pending = false;
-  pushing = true;
-  var snap = hclone(MEM);
+function executarEnvioNuvem() {
+  pendenteSalvamento = false;
+  salvandoNuvem = true;
+  var snapshot = clonarObjeto(MEMORIA_FICHA);
 
-  fetch(SB_URL + "/rest/v1/fichas", {
+  fetch(URL_SUPABASE + "/rest/v1/fichas", {
     method: "POST",
     headers: {
-      apikey: SB_KEY,
+      apikey: CHAVE_PUBLICA_SUPABASE,
       "Content-Type": "application/json",
       Prefer: "resolution=merge-duplicates,return=minimal"
     },
     body: JSON.stringify({
-      id: CODE,
-      dados: snap,
+      id: CODIGO_FICHA,
+      dados: snapshot,
       updated_at: new Date().toISOString()
     })
-  }).then(function(r) {
-    pushing = false;
-    if (r.ok) {
-      try { onPushed(snap); } catch (x) {}
+  }).then(function(resposta) {
+    salvandoNuvem = false;
+    if (resposta.ok) {
+      try { aoConcluirEnvioNuvem(snapshot); } catch (e) {}
     }
-    if (r.ok && !VIEW) lset(SYNCK, CODE);
-    st(r.ok ? (VIEW ? "Modo mestre: salvo na nuvem" : "☁ Salva na nuvem") : "Erro ao salvar na nuvem (" + r.status + ")");
+    if (resposta.ok && !MODO_VISUALIZACAO) {
+      definirArmazenamentoLocal(CHAVE_LOCAL_SINCRONIZADA, CODIGO_FICHA);
+    }
+    atualizarStatusNuvem(resposta.ok ? (MODO_VISUALIZACAO ? "Modo mestre: salvo na nuvem" : "☁ Salva na nuvem") : "Erro ao salvar na nuvem (" + resposta.status + ")");
   }).catch(function() {
-    pushing = false;
-    st("Sem conexão com a nuvem: salva só neste aparelho");
+    salvandoNuvem = false;
+    atualizarStatusNuvem("Sem conexão com a nuvem: salva só neste aparelho");
   });
 }
+var doPush = executarEnvioNuvem; // Alias
 
-function pull(code, cb) {
-  fetch(SB_URL + "/rest/v1/fichas?id=eq." + encodeURIComponent(code) + "&select=dados", {
-    headers: { apikey: SB_KEY }
+function buscarFichaNuvem(codigo, callback) {
+  fetch(URL_SUPABASE + "/rest/v1/fichas?id=eq." + encodeURIComponent(codigo) + "&select=dados", {
+    headers: { apikey: CHAVE_PUBLICA_SUPABASE }
   })
   .then(function(r) { return r.ok ? r.json() : Promise.reject(r.status); })
-  .then(function(rows) {
-    cb(rows && rows[0] ? rows[0].dados : null);
+  .then(function(linhas) {
+    callback(linhas && linhas[0] ? linhas[0].dados : null);
   })
   .catch(function() {
-    st("Não consegui falar com a nuvem");
+    atualizarStatusNuvem("Não consegui falar com a nuvem");
   });
 }
+var pull = buscarFichaNuvem; // Alias
 
-function applyCloud(d) {
-  MEM = d;
-  if (Array.isArray(d._list)) list = d._list;
-  migr(d);
-  if (Array.isArray(d._hl)) hl = d._hl;
-  if (typeof renderHab === "function") renderHab();
-  USEMEM = true;
-  if (typeof renderSkills === "function") renderSkills();
-  load();
-  USEMEM = false;
-  calc();
-  writeLocal(d);
-  BASE = hclone(d);
-  BASEOK = true;
+function aplicarDadosNuvem(dados) {
+  var dadosNormalizados = typeof migrarDadosLegados === "function" ? migrarDadosLegados(dados) : dados;
+  MEMORIA_FICHA = dadosNormalizados;
+  MEM = dadosNormalizados;
+
+  var periciasLista = dadosNormalizados._pericias_ativas || dadosNormalizados._list;
+  if (Array.isArray(periciasLista)) {
+    listaPericiasAtivas = periciasLista;
+    list = listaPericiasAtivas;
+  }
+
+  var habilidadesLista = dadosNormalizados._habilidades_ordem || dadosNormalizados._hl;
+  if (Array.isArray(habilidadesLista)) {
+    ordemHabilidades = habilidadesLista;
+    hl = ordemHabilidades;
+  }
+
+  if (typeof renderizarHabilidades === "function") renderizarHabilidades();
+  else if (typeof renderHab === "function") renderHab();
+
+  USAR_APENAS_MEMORIA = true;
+  if (typeof renderizarPericias === "function") renderizarPericias();
+  else if (typeof renderSkills === "function") renderSkills();
+
+  carregarFicha();
+  USAR_APENAS_MEMORIA = false;
+
+  calcularFicha();
+  gravarLocalmente(dadosNormalizados);
+
+  DADOS_BASE_SINCRONIZACAO = clonarObjeto(dadosNormalizados);
+  DADOS_BASE_PRONTOS = true;
+  BASE = DADOS_BASE_SINCRONIZACAO;
+  BASEOK = DADOS_BASE_PRONTOS;
 }
+var applyCloud = aplicarDadosNuvem; // Alias
 
-function typing() {
-  var a = document.activeElement;
-  return a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName);
+function usuarioDigitando() {
+  var elementoAtivo = document.activeElement;
+  return elementoAtivo && /^(INPUT|TEXTAREA|SELECT)$/.test(elementoAtivo.tagName);
 }
+var typing = usuarioDigitando; // Alias
 
-function sync(first) {
-  pull(CODE, function(d) {
-    if (!pending && !pushing) {
-      BASE = hclone(d);
-      BASEOK = true;
+function sincronizarFicha(primeiraVez) {
+  buscarFichaNuvem(CODIGO_FICHA, function(dados) {
+    if (!pendenteSalvamento && !salvandoNuvem) {
+      DADOS_BASE_SINCRONIZACAO = clonarObjeto(dados);
+      DADOS_BASE_PRONTOS = true;
+      BASE = DADOS_BASE_SINCRONIZACAO;
+      BASEOK = DADOS_BASE_PRONTOS;
     }
-    if (!d) {
-      if (VIEW) {
-        st(first ? "Ficha não encontrada" : "Esta ficha foi apagada");
+    if (!dados) {
+      if (MODO_VISUALIZACAO) {
+        atualizarStatusNuvem(primeiraVez ? "Ficha não encontrada" : "Esta ficha foi apagada");
         return;
       }
-      if (lget(SYNCK) === CODE) {
-        gone();
+      if (obterArmazenamentoLocal(CHAVE_LOCAL_SINCRONIZADA) === CODIGO_FICHA) {
+        reiniciarFichaApagada();
         return;
       }
-      if (first && lget(KEY)) save();
+      if (primeiraVez && obterArmazenamentoLocal(CHAVE_LOCAL_FICHA)) salvarFicha();
       return;
     }
-    var cur = (MEM && MEM._ts) || (VIEW ? 0 : localTs());
-    if ((d._ts || 0) > cur || (first && VIEW)) {
-      if (!typing() && !pending) {
-        applyCloud(d);
-        st(VIEW ? "Modo mestre: ficha atualizada" : "☁ Atualizada pela nuvem");
+
+    var timestampNuvem = (dados._timestamp || dados._ts || 0);
+    var timestampAtual = (MEMORIA_FICHA && (MEMORIA_FICHA._timestamp || MEMORIA_FICHA._ts)) ||
+                         (MODO_VISUALIZACAO ? 0 : obterTimestampLocal());
+
+    if (timestampNuvem > timestampAtual || (primeiraVez && MODO_VISUALIZACAO)) {
+      if (!usuarioDigitando() && !pendenteSalvamento) {
+        aplicarDadosNuvem(dados);
+        atualizarStatusNuvem(MODO_VISUALIZACAO ? "Modo mestre: ficha atualizada" : "☁ Atualizada pela nuvem");
       }
-    } else if (first && !VIEW && lget(KEY) && (d._ts || 0) < cur) {
-      save();
+    } else if (primeiraVez && !MODO_VISUALIZACAO && obterArmazenamentoLocal(CHAVE_LOCAL_FICHA) && timestampNuvem < timestampAtual) {
+      salvarFicha();
     }
   });
 }
+var sync = sincronizarFicha; // Alias

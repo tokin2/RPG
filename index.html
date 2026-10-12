@@ -18,7 +18,7 @@
   <div class="box portrait">
     <label class="pic" id="pic" title="Toque para escolher a imagem do personagem"><img id="picimg" alt="Imagem do personagem" hidden><span id="picph">+ Imagem do personagem</span><input type="file" id="picfile" accept="image/*" hidden></label>
     <button type="button" id="picdel" hidden>Remover imagem</button>
-    <input type="hidden" data-k="img">
+    <input type="hidden" data-k="imagem">
   </div>
   <div class="box info">
     <label class="ir full nm"><span class="il">Nome</span><input data-k="nome" placeholder="Nome do personagem" aria-label="Nome do personagem"></label>
@@ -37,38 +37,38 @@
     <div class="stones" id="stones"></div>
     <div class="col">
       <div class="box skills"><h2>Perícias</h2><div class="hd"><span></span><span>Total</span><span>Perícia</span><span>Atrib.</span><span>Outros</span><span></span></div><div id="skills"></div><div class="row2"><button id="addsk">+ Adicionar perícia</button><button id="srtsk" title="Coloca as perícias em ordem alfabética">Ordenar A–Z</button><button id="rstsk" title="Traz de volta as perícias padrão removidas">Restaurar padrão</button></div></div>
-      <div class="box"><h2>Equipado</h2><textarea data-k="eqp" placeholder="Itens, armadura, mochila..." style="min-height:110px"></textarea></div>
+      <div class="box"><h2>Equipado</h2><textarea data-k="equipamento" placeholder="Itens, armadura, mochila..." style="min-height:110px"></textarea></div>
     </div>
   </div>
 
   <div class="mr"><div class="mrt">
   <div class="col">
     <div class="vit">
-      <div class="vcol"><div class="box shield"><span class="l">Defesa</span><strong id="defesa">10</strong><span class="l">Bônus</span><input data-k="defx" id="defx" type="number" value="0"></div><div class="box dado"><img alt="" src="assets/img/d20-lucky.png"><div class="dt">Dado da Sorte</div><div class="pips" id="pips"></div><div class="dcnt" id="dcnt">3 / 3</div><input type="number" id="dado" data-k="dado" value="3" min="0" max="3" hidden aria-hidden="true"><div class="dbtn"><button type="button" id="dusar">Usar rerrolagem</button><button type="button" id="drec" title="Recarrega os 3 dados para uma nova sessão">Nova sessão</button></div></div></div>
+      <div class="vcol"><div class="box shield"><span class="l">Defesa</span><strong id="defesa">10</strong><span class="l">Bônus</span><input data-k="defesa_bonus" id="defesa_bonus" type="number" value="0"></div><div class="box dado"><img alt="" src="assets/img/d20-lucky.png"><div class="dt">Dado da Sorte</div><div class="pips" id="pips"></div><div class="dcnt" id="dcnt">3 / 3</div><input type="number" id="dado" data-k="dados_sorte_qtd" value="3" min="0" max="3" hidden aria-hidden="true"><div class="dbtn"><button type="button" id="dusar">Usar rerrolagem</button><button type="button" id="drec" title="Recarrega os 3 dados para uma nova sessão">Nova sessão</button></div></div></div>
       <div>
         <div class="box">
-          <div class="book"><div><span class="l">PV atuais</span><input data-k="pv" id="pv" type="number" value="0"></div><div><span class="l">PV máximos</span><input data-k="pvm" id="pvm" type="number" value="0"></div></div>
+          <div class="book"><div><span class="l">PV atuais</span><input data-k="vida_atual" id="vida_atual" type="number" value="0"></div><div><span class="l">PV máximos</span><input data-k="vida_maxima" id="vida_maxima" type="number" value="0"></div></div>
           <div class="bar"><i id="bpv" style="background:var(--pv)"></i></div>
-          <div class="book"><div><span class="l">PM atuais</span><input data-k="pm" id="pm" type="number" value="0"></div><div><span class="l">PM máximos</span><input data-k="pmm" id="pmm" type="number" value="0"></div></div>
+          <div class="book"><div><span class="l">PM atuais</span><input data-k="mana_atual" id="mana_atual" type="number" value="0"></div><div><span class="l">PM máximos</span><input data-k="mana_maxima" id="mana_maxima" type="number" value="0"></div></div>
           <div class="bar" style="margin-bottom:2px"><i id="bpm" style="background:var(--pm)"></i></div>
-          <label><span class="l">PV temporários</span><input data-k="pvt" type="number" value="0"></label>
+          <label><span class="l">PV temporários</span><input data-k="vida_temporaria" id="vida_temporaria" type="number" value="0"></label>
         </div>
       </div>
     </div>
     <div>
       <div class="sign"><span>Proficiência</span><strong id="prof">+2</strong></div>
       <div class="sign"><span>Iniciativa</span><strong id="ini">0</strong></div>
-      <div class="sign"><span>Deslocamento</span><input data-k="desl" value="9m"></div>
+      <div class="sign"><span>Deslocamento</span><input data-k="deslocamento" value="9m"></div>
     </div>
     <svg class="skull" viewBox="0 0 64 64" fill="var(--paper)" stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 15C8 13 4 7 6 1c4 4 9 6 14 6M47 15c9-2 13-8 11-14-4 4-9 6-14 6" fill="none"/><path d="M32 8C19 8 10 17 10 29c0 8 4 13 9 16v9h8v-5h10v5h8v-9c5-3 9-8 9-16C54 17 45 8 32 8z"/><ellipse cx="23" cy="30" rx="5" ry="6" fill="var(--ink)"/><ellipse cx="41" cy="30" rx="5" ry="6" fill="var(--ink)"/><path d="M32 37l-3 6h6z" fill="var(--ink)"/></svg>
       </div>
 
   <div class="col">
-    <div class="coins"><div class="vwrap"><div class="vessel pouch"><img alt="" src="assets/img/coin-pouch.png"><input class="cn" data-k="cn0" value="Tibares (T$)" aria-label="Nome da moeda"><div class="num"><input data-k="tib" id="tib" type="number" min="0" value="0" aria-label="Quantidade"></div></div><div class="pm"><button type="button" class="sp" data-step="-1" data-t="tib" aria-label="Diminuir">−</button><button type="button" class="sp" data-step="1" data-t="tib" aria-label="Aumentar">+</button></div></div><div class="vwrap"><div class="vessel flask"><img alt="" src="assets/img/flask-cura.png"><input class="cn" data-k="cl" value="Poção de cura" aria-label="Nome da poção"><div class="num"><input data-k="cq" id="cq" type="number" min="0" value="0" aria-label="Quantidade"></div></div><div class="pm"><button type="button" class="sp" data-step="-1" data-t="cq" aria-label="Diminuir">−</button><button type="button" class="sp" data-step="1" data-t="cq" aria-label="Aumentar">+</button></div></div><div class="vwrap"><div class="vessel flask"><img alt="" src="assets/img/flask-mana.png"><input class="cn" data-k="ml" value="Poção de mana" aria-label="Nome da poção"><div class="num"><input data-k="mq" id="mq" type="number" min="0" value="0" aria-label="Quantidade"></div></div><div class="pm"><button type="button" class="sp" data-step="-1" data-t="mq" aria-label="Diminuir">−</button><button type="button" class="sp" data-step="1" data-t="mq" aria-label="Aumentar">+</button></div></div></div>
-    <div class="box"><h2>Inventário</h2><div class="inv hd"><span>Item</span><span>Qtd</span><span>Espaços</span></div><div id="inv"></div><div class="invt">Espaços usados: <b id="usado">0</b> / <input data-k="carga" id="carga" type="number" aria-label="Limite de espaços" style="width:56px;text-align:center"></div></div>
+    <div class="coins"><div class="vwrap"><div class="vessel pouch"><img alt="" src="assets/img/coin-pouch.png"><input class="cn" data-k="moeda_nome" value="Tibares (T$)" aria-label="Nome da moeda"><div class="num"><input data-k="moeda_qtd" id="moeda_qtd" type="number" min="0" value="0" aria-label="Quantidade"></div></div><div class="pm"><button type="button" class="sp" data-step="-1" data-t="moeda_qtd" aria-label="Diminuir">−</button><button type="button" class="sp" data-step="1" data-t="moeda_qtd" aria-label="Aumentar">+</button></div></div><div class="vwrap"><div class="vessel flask"><img alt="" src="assets/img/flask-cura.png"><input class="cn" data-k="pocao_cura_nome" value="Poção de cura" aria-label="Nome da poção"><div class="num"><input data-k="pocao_cura_qtd" id="pocao_cura_qtd" type="number" min="0" value="0" aria-label="Quantidade"></div></div><div class="pm"><button type="button" class="sp" data-step="-1" data-t="pocao_cura_qtd" aria-label="Diminuir">−</button><button type="button" class="sp" data-step="1" data-t="pocao_cura_qtd" aria-label="Aumentar">+</button></div></div><div class="vwrap"><div class="vessel flask"><img alt="" src="assets/img/flask-mana.png"><input class="cn" data-k="pocao_mana_nome" value="Poção de mana" aria-label="Nome da poção"><div class="num"><input data-k="pocao_mana_qtd" id="pocao_mana_qtd" type="number" min="0" value="0" aria-label="Quantidade"></div></div><div class="pm"><button type="button" class="sp" data-step="-1" data-t="pocao_mana_qtd" aria-label="Diminuir">−</button><button type="button" class="sp" data-step="1" data-t="pocao_mana_qtd" aria-label="Aumentar">+</button></div></div></div>
+    <div class="box"><h2>Inventário</h2><div class="inv hd"><span>Item</span><span>Qtd</span><span>Espaços</span></div><div id="inv"></div><div class="invt">Espaços usados: <b id="usado">0</b> / <input data-k="carga_maxima" id="carga_maxima" type="number" aria-label="Limite de espaços" style="width:56px;text-align:center"></div></div>
   </div>
   </div>
-  <div class="box fill"><h2>Características passivas</h2><textarea data-k="pas" placeholder="Habilidades e efeitos sempre ativos..." style="min-height:200px"></textarea></div>
+  <div class="box fill"><h2>Características passivas</h2><textarea data-k="passivas" placeholder="Habilidades e efeitos sempre ativos..." style="min-height:200px"></textarea></div>
   </div>
 </div>
 
@@ -76,8 +76,8 @@
   <div class="hb hd"><span class="l">Nome</span><span class="l">Dano</span><span class="l">Escala com</span><span class="l">Tipo</span><span class="l">Descrição</span><span></span></div>
   <div id="habs"></div>
   <div class="row2"><button type="button" id="addhb">+ Adicionar linha</button></div>
-  <label style="display:block;margin-top:10px"><span class="l">Anotações</span><textarea data-k="hab" placeholder="Notas gerais..." style="min-height:60px"></textarea></label>
-  <datalist id="esc"><option value="Força"><option value="Destreza"><option value="Constituição"><option value="Inteligência"><option value="Sabedoria"><option value="Carisma"><option value="Nível"><option value="Não escala"></datalist>
+  <label style="display:block;margin-top:10px"><span class="l">Anotações</span><textarea data-k="anotacoes" placeholder="Notas gerais..." style="min-height:60px"></textarea></label>
+  <datalist id="esc"><option value="forca"><option value="destreza"><option value="constituicao"><option value="inteligencia"><option value="sabedoria"><option value="carisma"><option value="Nível"><option value="Não escala"></datalist>
   <datalist id="tip"><option value="Ataque"><option value="Truque"><option value="Magia preparada"></datalist>
 </div>
 
