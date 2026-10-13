@@ -1,0 +1,54 @@
+/* ==========================================================================
+   Tema Base Compartilhado - Tormenta20 RPG
+   Compatível com GitHub Pages e visual Dark Parchment
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=IM+Fell+English:ital@0;1&display=swap');
+
+:root {
+  --bg: #08080a;
+  --page: #08080a;
+  --paper: #212428;
+  --paper2: #2e3237;
+  --panel: #212428;
+  --ink: #dcd9d2;
+  --muted: #9b9ba3;
+  --rose1: #303135;
+  --rose2: #0f0f11;
+  --pv: #c63a4f;
+  --pm: #5a97d0;
+  color-scheme: dark;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #09090a;
+    --page: #08080a;
+    --rose1: #303135;
+    --rose2: #0f0f11;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #09090a;
+  --page: #08080a;
+  --rose1: #303135;
+  --rose2: #0f0f11;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-padding-top: env(safe-area-inset-top, 0px);
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  font: 16px/1.35 "IM Fell English", Georgia, serif;
+}
