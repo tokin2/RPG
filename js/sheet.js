@@ -361,10 +361,24 @@ confirmacaoEmDoisPassos("clear", "Tem certeza?", function() {
   })
   .catch(function() {})
   .then(function() {
-    [CHAVE_LOCAL_FICHA, CHAVE_LOCAL_PERICIAS, CHAVE_LOCAL_SINCRONIZADA, "ficha-tormenta-code"].forEach(function(k) {
+    [
+      obterChaveLocalFicha(cod),
+      obterChaveLocalPericias(cod),
+      obterChaveLocalSincronizada(cod),
+      CHAVE_LOCAL_FICHA_BASE,
+      CHAVE_LOCAL_PERICIAS_BASE,
+      CHAVE_LOCAL_SINCRONIZADA_BASE
+    ].forEach(function(k) {
       try { localStorage.removeItem(k); } catch (e) {}
     });
-    location.reload();
+    if (localStorage.getItem("ficha-tormenta-code") === cod) {
+      try { localStorage.removeItem("ficha-tormenta-code"); } catch (e) {}
+    }
+    if (window.location.search) {
+      window.location.href = window.location.pathname;
+    } else {
+      location.reload();
+    }
   });
 });
 
@@ -423,10 +437,54 @@ if (MODO_VISUALIZACAO) {
   }
   sincronizarFicha(true);
 
+  // Copiar link da ficha para a área de transferência
+  function copiarLinkFicha(btnOrigem) {
+    var linkCompleto = window.location.origin + window.location.pathname + "?c=" + encodeURIComponent(CODIGO_FICHA);
+    function sucesso() {
+      var textoAntigo = btnOrigem ? btnOrigem.textContent : "";
+      if (btnOrigem) btnOrigem.textContent = "Copiado!";
+      atualizarStatusNuvem("Link copiado para a área de transferência!");
+      setTimeout(function() {
+        if (btnOrigem && btnOrigem.isConnected) btnOrigem.textContent = textoAntigo;
+      }, 2000);
+    }
+    function fallback() {
+      var ta = document.createElement("textarea");
+      ta.value = linkCompleto;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand("copy");
+        sucesso();
+      } catch (err) {
+        prompt("Copie o link da sua ficha:", linkCompleto);
+      }
+      document.body.removeChild(ta);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(linkCompleto).then(sucesso, fallback);
+    } else {
+      fallback();
+    }
+  }
+
+  var btnCopiarLink = document.getElementById("copybtn");
+  if (btnCopiarLink) {
+    btnCopiarLink.onclick = function() { copiarLinkFicha(btnCopiarLink); };
+  }
+
+  if (spanCodigo) {
+    spanCodigo.style.cursor = "pointer";
+    spanCodigo.title = "Clique para copiar o link da ficha";
+    spanCodigo.onclick = function() { copiarLinkFicha(btnCopiarLink); };
+  }
+
   var btnTrocarCodigo = document.getElementById("chcode");
   if (btnTrocarCodigo) {
     btnTrocarCodigo.onclick = function() {
-      var digitado = (prompt("Digite o código da ficha que você quer carregar neste aparelho:") || "").trim();
+      var digitado = sanitizarCodigo((prompt("Digite o código da ficha que você quer carregar neste aparelho:") || ""));
       if (!digitado || digitado === CODIGO_FICHA) return;
       buscarFichaNuvem(digitado, function(dadosEncontrados) {
         if (!dadosEncontrados) {
@@ -438,10 +496,32 @@ if (MODO_VISUALIZACAO) {
         CODIGO_FICHA = digitado;
         CODE = CODIGO_FICHA;
         definirArmazenamentoLocal("ficha-tormenta-code", CODIGO_FICHA);
-        document.getElementById("code").textContent = CODIGO_FICHA;
+        if (window.history && window.history.replaceState) {
+          try {
+            var url = new URL(window.location.href);
+            url.searchParams.set("c", CODIGO_FICHA);
+            url.searchParams.delete("f");
+            url.searchParams.delete("nova");
+            window.history.replaceState(null, "", url.toString());
+          } catch (e) {}
+        }
+        if (spanCodigo) spanCodigo.textContent = CODIGO_FICHA;
         aplicarDadosNuvem(dadosEncontrados);
         salvarFicha();
       });
+    };
+  }
+
+  var btnNovaFicha = document.getElementById("newcode");
+  if (btnNovaFicha) {
+    btnNovaFicha.onclick = function() {
+      if (!confirm("Deseja abrir uma nova ficha em branco?")) return;
+      descarregarHistorico();
+      var url = new URL(window.location.href);
+      url.searchParams.set("nova", "1");
+      url.searchParams.delete("c");
+      url.searchParams.delete("f");
+      window.location.href = url.toString();
     };
   }
 }

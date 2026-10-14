@@ -5,6 +5,7 @@
 
 var PARAMETROS_URL = new URLSearchParams(location.search);
 var MODO_VISUALIZACAO = PARAMETROS_URL.get("f");
+var CODIGO_JOGADOR_URL = PARAMETROS_URL.get("c") || PARAMETROS_URL.get("id") || PARAMETROS_URL.get("codigo");
 var USAR_APENAS_MEMORIA = false;
 var CODIGO_FICHA = "";
 var MODO_EDICAO = false;
@@ -24,14 +25,21 @@ var BASEOK = DADOS_BASE_PRONTOS;
 var pushing = salvandoNuvem;
 var MEM = MEMORIA_FICHA;
 
-// Geração ou recuperação do código único de 8 caracteres da ficha
+// Geração ou recuperação do código único de 8 caracteres da ficha com suporte a URL independente por aba
 (function() {
-  CODIGO_FICHA = MODO_VISUALIZACAO || "";
-  if (!CODIGO_FICHA) {
+  if (MODO_VISUALIZACAO) {
+    CODIGO_FICHA = sanitizarCodigo(MODO_VISUALIZACAO);
+  } else if (CODIGO_JOGADOR_URL) {
+    CODIGO_FICHA = sanitizarCodigo(CODIGO_JOGADOR_URL);
+  }
+
+  var pediuNova = PARAMETROS_URL.has("nova");
+  if (!CODIGO_FICHA && !pediuNova) {
     try {
-      CODIGO_FICHA = localStorage.getItem("ficha-tormenta-code") || "";
+      CODIGO_FICHA = sanitizarCodigo(localStorage.getItem("ficha-tormenta-code") || "");
     } catch (e) {}
   }
+
   if (!CODIGO_FICHA) {
     var caracteres = "abcdefghjkmnpqrstuvwxyz23456789";
     var bytesAleatorios = new Uint8Array(8);
@@ -39,9 +47,25 @@ var MEM = MEMORIA_FICHA;
     for (var i = 0; i < 8; i++) {
       CODIGO_FICHA += caracteres[bytesAleatorios[i] % caracteres.length];
     }
+  }
+
+  if (!MODO_VISUALIZACAO) {
     try {
       localStorage.setItem("ficha-tormenta-code", CODIGO_FICHA);
     } catch (e) {}
+
+    // Reflete o código na URL para permitir múltiplas abas independentes e links diretos
+    if (window.history && window.history.replaceState) {
+      try {
+        var urlAtual = new URL(window.location.href);
+        if (urlAtual.searchParams.get("c") !== CODIGO_FICHA || urlAtual.searchParams.has("nova")) {
+          urlAtual.searchParams.set("c", CODIGO_FICHA);
+          urlAtual.searchParams.delete("nova");
+          urlAtual.searchParams.delete("f");
+          window.history.replaceState(null, "", urlAtual.toString());
+        }
+      } catch (e) {}
+    }
   }
   CODE = CODIGO_FICHA;
 })();
@@ -62,12 +86,64 @@ function definirArmazenamentoLocal(chave, valor) {
 }
 var lset = definirArmazenamentoLocal; // Alias
 
+// Helpers para leitura e escrita isoladas por ficha com fallback de migração automática
+function obterDadosFichaArmazenados(codigo) {
+  var cod = codigo || CODIGO_FICHA;
+  var chaveEspecifica = obterChaveLocalFicha(cod);
+  var bruto = obterArmazenamentoLocal(chaveEspecifica);
+  if (!bruto && cod) {
+    var codLegado = obterArmazenamentoLocal("ficha-tormenta-code");
+    if (codLegado === cod) {
+      bruto = obterArmazenamentoLocal(CHAVE_LOCAL_FICHA_BASE);
+      if (bruto) {
+        definirArmazenamentoLocal(chaveEspecifica, bruto);
+      }
+    }
+  }
+  try {
+    return bruto ? JSON.parse(bruto) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function obterPericiasArmazenadas(codigo) {
+  var cod = codigo || CODIGO_FICHA;
+  var chaveEspecifica = obterChaveLocalPericias(cod);
+  var bruto = obterArmazenamentoLocal(chaveEspecifica);
+  if (!bruto && cod) {
+    var codLegado = obterArmazenamentoLocal("ficha-tormenta-code");
+    if (codLegado === cod) {
+      bruto = obterArmazenamentoLocal(CHAVE_LOCAL_PERICIAS_BASE);
+      if (bruto) {
+        definirArmazenamentoLocal(chaveEspecifica, bruto);
+      }
+    }
+  }
+  try {
+    var lista = bruto ? JSON.parse(bruto) : null;
+    return Array.isArray(lista) ? lista : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function gravarFichaLocal(dados, codigo) {
+  var cod = codigo || CODIGO_FICHA;
+  if (!cod || !dados) return;
+  definirArmazenamentoLocal(obterChaveLocalFicha(cod), JSON.stringify(dados));
+}
+
+function gravarPericiasLocais(lista, codigo) {
+  var cod = codigo || CODIGO_FICHA;
+  if (!cod || !Array.isArray(lista)) return;
+  definirArmazenamentoLocal(obterChaveLocalPericias(cod), JSON.stringify(lista));
+}
+
 // Lista de perícias ativas
 var listaPericiasAtivas = null;
 if (!MODO_VISUALIZACAO) {
-  try {
-    listaPericiasAtivas = JSON.parse(localStorage.getItem(CHAVE_LOCAL_PERICIAS) || "null");
-  } catch (e) {}
+  listaPericiasAtivas = obterPericiasArmazenadas(CODIGO_FICHA);
 }
 if (!Array.isArray(listaPericiasAtivas)) {
   listaPericiasAtivas = INDICES_PERICIAS_INICIAIS.slice();
@@ -76,9 +152,7 @@ var list = listaPericiasAtivas; // Alias
 
 function salvarListaPericias() {
   if (MODO_VISUALIZACAO) return;
-  try {
-    localStorage.setItem(CHAVE_LOCAL_PERICIAS, JSON.stringify(listaPericiasAtivas));
-  } catch (e) {}
+  gravarPericiasLocais(listaPericiasAtivas, CODIGO_FICHA);
 }
 var saveList = salvarListaPericias; // Alias
 
@@ -135,13 +209,11 @@ var migr = migrarDadosLegados; // Alias
 // Carregar estado inicial salvo
 var DADOS_INICIAIS = null;
 if (!MODO_VISUALIZACAO) {
-  try {
-    var bruto = JSON.parse(localStorage.getItem(CHAVE_LOCAL_FICHA) || "null");
-    if (bruto) {
-      DADOS_INICIAIS = migrarDadosLegados(bruto);
-      localStorage.setItem(CHAVE_LOCAL_FICHA, JSON.stringify(DADOS_INICIAIS));
-    }
-  } catch (e) {}
+  var bruto = obterDadosFichaArmazenados(CODIGO_FICHA);
+  if (bruto) {
+    DADOS_INICIAIS = migrarDadosLegados(bruto);
+    gravarFichaLocal(DADOS_INICIAIS, CODIGO_FICHA);
+  }
 }
 var D0 = DADOS_INICIAIS; // Alias
 
@@ -173,9 +245,7 @@ function salvarFicha() {
   MEM = dados;
 
   if (!MODO_VISUALIZACAO) {
-    try {
-      localStorage.setItem(CHAVE_LOCAL_FICHA, JSON.stringify(dados));
-    } catch (e) {}
+    gravarFichaLocal(dados, CODIGO_FICHA);
   }
 
   if (typeof enviarParaNuvemDebounced === "function") {
@@ -189,9 +259,7 @@ var save = salvarFicha; // Alias
 function carregarFicha() {
   var dados = null;
   if (!MODO_VISUALIZACAO && !USAR_APENAS_MEMORIA) {
-    try {
-      dados = JSON.parse(localStorage.getItem(CHAVE_LOCAL_FICHA) || "null");
-    } catch (e) {}
+    dados = obterDadosFichaArmazenados(CODIGO_FICHA);
   }
   if (!dados) dados = MEMORIA_FICHA || MEM;
   if (!dados) return;
@@ -219,27 +287,41 @@ var load = carregarFicha; // Alias
 
 function gravarLocalmente(dados) {
   if (MODO_VISUALIZACAO) return;
-  definirArmazenamentoLocal(CHAVE_LOCAL_FICHA, JSON.stringify(dados));
+  gravarFichaLocal(dados, CODIGO_FICHA);
   salvarListaPericias();
 }
 var writeLocal = gravarLocalmente; // Alias
 
 function obterTimestampLocal() {
-  var dados = null;
-  try {
-    dados = JSON.parse(localStorage.getItem(CHAVE_LOCAL_FICHA) || "null");
-  } catch (e) {}
+  var dados = obterDadosFichaArmazenados(CODIGO_FICHA);
   return (dados && (dados._timestamp || dados._ts)) || 0;
 }
 var localTs = obterTimestampLocal; // Alias
 
 function reiniciarFichaApagada() {
-  [CHAVE_LOCAL_FICHA, CHAVE_LOCAL_PERICIAS, CHAVE_LOCAL_SINCRONIZADA, "ficha-tormenta-code"].forEach(function(chave) {
+  var cod = CODIGO_FICHA;
+  [
+    obterChaveLocalFicha(cod),
+    obterChaveLocalPericias(cod),
+    obterChaveLocalSincronizada(cod),
+    CHAVE_LOCAL_FICHA_BASE,
+    CHAVE_LOCAL_PERICIAS_BASE,
+    CHAVE_LOCAL_SINCRONIZADA_BASE
+  ].forEach(function(chave) {
     try {
       localStorage.removeItem(chave);
     } catch (e) {}
   });
+  if (localStorage.getItem("ficha-tormenta-code") === cod) {
+    try {
+      localStorage.removeItem("ficha-tormenta-code");
+    } catch (e) {}
+  }
   definirArmazenamentoLocal("ficha-tormenta-msg", "O mestre apagou a sua ficha anterior. Esta é uma ficha nova.");
-  location.reload();
+  if (window.location.search) {
+    window.location.href = window.location.pathname;
+  } else {
+    location.reload();
+  }
 }
 var gone = reiniciarFichaApagada; // Alias
