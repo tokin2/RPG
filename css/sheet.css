@@ -819,15 +819,15 @@ button.x:hover {
 .vessel.pouch .cn {
   left: 11%;
   right: 19%;
-  top: 47%;
-  font-size: clamp(8px, 4.95cqw, 16px);
+  top: 43%;
+  font-size: clamp(10px, 4.95cqw, 16px);
 }
 
 .vessel.flask .cn {
   left: 9%;
   right: 17%;
-  top: 48.5%;
-  font-size: clamp(8px, 6.6cqw, 16px);
+  top: 43%;
+  font-size: clamp(10px, 4.95cqw, 16px);
 }
 
 .vessel.pouch .num {
