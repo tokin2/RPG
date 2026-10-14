@@ -282,6 +282,10 @@ function carregarFicha() {
       elemento.value = valor;
     }
   });
+
+  if (typeof atualizarVisibilidadeHabilidades === "function") {
+    atualizarVisibilidadeHabilidades();
+  }
 }
 var load = carregarFicha; // Alias
 

@@ -49,24 +49,53 @@ function recarregarPericias() {
 }
 var refresh = recarregarPericias; // Alias
 
+var ICONE_OLHO = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+var ICONE_OLHO_RISCADO = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+
+function atualizarVisibilidadeHabilidades() {
+  document.querySelectorAll("#habs .hb").forEach(function(card) {
+    var inputOculto = card.querySelector('input[data-k^="hab_oculto_"], input[data-k^="ho"]');
+    var btn = card.querySelector("[data-htog]");
+    var textarea = card.querySelector("textarea.hx");
+    if (!inputOculto || !btn || !textarea) return;
+
+    var oculto = inputOculto.value === "1";
+    textarea.hidden = oculto;
+    if (oculto) {
+      card.classList.add("collapsed");
+      btn.innerHTML = ICONE_OLHO_RISCADO;
+      btn.title = "Mostrar descrição";
+      btn.setAttribute("aria-label", "Mostrar descrição");
+    } else {
+      card.classList.remove("collapsed");
+      btn.innerHTML = ICONE_OLHO;
+      btn.title = "Esconder descrição";
+      btn.setAttribute("aria-label", "Esconder descrição");
+    }
+  });
+}
+
 function renderizarHabilidades() {
   var container = document.getElementById("habs");
   if (container) {
     var listaHabs = ordemHabilidades || hl;
     container.innerHTML = listaHabs.map(function(idLinha, posicao) {
-      return '<div class="hb">' +
+      return '<div class="hb" id="hb_card_' + idLinha + '">' +
         '<input data-k="hab_nome_' + idLinha + '" placeholder="Nome" aria-label="Nome da habilidade">' +
         '<input data-k="hab_dano_' + idLinha + '" placeholder="1d6" aria-label="Dado de dano">' +
         '<input data-k="hab_escala_' + idLinha + '" list="esc" placeholder="Escala com" aria-label="Escala com">' +
         '<input data-k="hab_tipo_' + idLinha + '" list="tip" placeholder="Tipo" aria-label="Tipo">' +
         '<textarea class="hx" rows="1" data-k="hab_descricao_' + idLinha + '" placeholder="Descrição" aria-label="Descrição"></textarea>' +
+        '<input type="hidden" data-k="hab_oculto_' + idLinha + '" value="0">' +
         '<div class="ac">' +
           '<button type="button" class="x" data-hmv="-1" data-hid="' + idLinha + '" aria-label="Mover para cima" title="Mover para cima"' + (posicao === 0 ? " disabled" : "") + '>▲</button>' +
           '<button type="button" class="x" data-hmv="1" data-hid="' + idLinha + '" aria-label="Mover para baixo" title="Mover para baixo"' + (posicao === listaHabs.length - 1 ? " disabled" : "") + '>▼</button>' +
+          '<button type="button" class="x eye-btn" data-htog="' + idLinha + '" aria-label="Esconder descrição" title="Esconder descrição">' + ICONE_OLHO + '</button>' +
           '<button type="button" class="x" data-hdel="' + idLinha + '" aria-label="Remover linha" title="Remover">×</button>' +
         '</div>' +
       '</div>';
     }).join("");
+    atualizarVisibilidadeHabilidades();
   }
 }
 var renderHab = renderizarHabilidades; // Alias
@@ -74,6 +103,7 @@ var renderHab = renderizarHabilidades; // Alias
 function recarregarHabilidades() {
   renderizarHabilidades();
   carregarFicha();
+  atualizarVisibilidadeHabilidades();
   calcularFicha();
   salvarFicha();
 }
@@ -287,6 +317,37 @@ if (btnAddHab) {
     if (campoNome) campoNome.focus();
   };
 }
+
+// Alternar Visibilidade da Descrição da Habilidade (Olho / Olho Riscado)
+document.addEventListener("click", function(e) {
+  var btn = e.target.closest && e.target.closest("[data-htog]");
+  if (!btn) return;
+  var idLinha = btn.dataset.htog;
+  var card = btn.closest(".hb");
+  if (!card) return;
+  var textarea = card.querySelector("textarea.hx");
+  var inputOculto = card.querySelector('input[data-k="hab_oculto_' + idLinha + '"], input[data-k="ho' + idLinha + '"]');
+  if (!textarea) return;
+
+  var estaOculto = textarea.hidden || card.classList.contains("collapsed");
+  if (estaOculto) {
+    textarea.hidden = false;
+    card.classList.remove("collapsed");
+    btn.innerHTML = ICONE_OLHO;
+    btn.title = "Esconder descrição";
+    btn.setAttribute("aria-label", "Esconder descrição");
+    if (inputOculto) inputOculto.value = "0";
+    if (typeof ajustarAlturaTextareas === "function") ajustarAlturaTextareas();
+  } else {
+    textarea.hidden = true;
+    card.classList.add("collapsed");
+    btn.innerHTML = ICONE_OLHO_RISCADO;
+    btn.title = "Mostrar descrição";
+    btn.setAttribute("aria-label", "Mostrar descrição");
+    if (inputOculto) inputOculto.value = "1";
+  }
+  salvarFicha();
+});
 
 // Steppers (Botões + / -)
 document.addEventListener("click", function(e) {
