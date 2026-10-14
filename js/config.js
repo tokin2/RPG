@@ -11,13 +11,40 @@ var CHAVE_PUBLICA_SUPABASE = "sb_publishable_F9RIyN4V4nl9d4H40Wf2bw_EcuPJje7";
 var SB_URL = URL_SUPABASE;
 var SB_KEY = CHAVE_PUBLICA_SUPABASE;
 
-// Chaves de Armazenamento Local (localStorage)
-var CHAVE_LOCAL_FICHA = "ficha-tormenta-v1";
-var CHAVE_LOCAL_PERICIAS = "ficha-tormenta-skills-v4";
-var CHAVE_LOCAL_SINCRONIZADA = "ficha-tormenta-synced";
+// Chaves Base de Armazenamento Local (localStorage)
+var CHAVE_LOCAL_FICHA_BASE = "ficha-tormenta-v1";
+var CHAVE_LOCAL_PERICIAS_BASE = "ficha-tormenta-skills-v4";
+var CHAVE_LOCAL_SINCRONIZADA_BASE = "ficha-tormenta-synced";
+
+// Chaves legadas globais mantidas para retrocompatibilidade
+var CHAVE_LOCAL_FICHA = CHAVE_LOCAL_FICHA_BASE;
+var CHAVE_LOCAL_PERICIAS = CHAVE_LOCAL_PERICIAS_BASE;
+var CHAVE_LOCAL_SINCRONIZADA = CHAVE_LOCAL_SINCRONIZADA_BASE;
 var KEY = CHAVE_LOCAL_FICHA;
 var LKEY = CHAVE_LOCAL_PERICIAS;
 var SYNCK = CHAVE_LOCAL_SINCRONIZADA;
+
+// Sanitização segura de código de ficha (apenas caracteres alfanuméricos seguros)
+function sanitizarCodigo(cod) {
+  if (typeof cod !== "string") return "";
+  return cod.trim().replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 32);
+}
+
+// Funções para isolamento de armazenamento por ficha (evita colisão entre múltiplas abas)
+function obterChaveLocalFicha(codigo) {
+  var cod = sanitizarCodigo(codigo || (typeof CODIGO_FICHA !== "undefined" ? CODIGO_FICHA : ""));
+  return cod ? CHAVE_LOCAL_FICHA_BASE + "-" + cod : CHAVE_LOCAL_FICHA_BASE;
+}
+
+function obterChaveLocalPericias(codigo) {
+  var cod = sanitizarCodigo(codigo || (typeof CODIGO_FICHA !== "undefined" ? CODIGO_FICHA : ""));
+  return cod ? CHAVE_LOCAL_PERICIAS_BASE + "-" + cod : CHAVE_LOCAL_PERICIAS_BASE;
+}
+
+function obterChaveLocalSincronizada(codigo) {
+  var cod = sanitizarCodigo(codigo || (typeof CODIGO_FICHA !== "undefined" ? CODIGO_FICHA : ""));
+  return cod ? CHAVE_LOCAL_SINCRONIZADA_BASE + "-" + cod : CHAVE_LOCAL_SINCRONIZADA_BASE;
+}
 
 // Lista de Atributos Base de Tormenta20: [identificador, nome por extenso]
 var ATRIBUTOS_PADRAO = [

@@ -22,3 +22,4 @@ skills-lock.json
 *.bak
 *.tmp
 backup_*.json
+.playwright-mcp/

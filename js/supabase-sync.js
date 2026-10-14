@@ -286,7 +286,7 @@ function executarEnvioNuvem() {
       try { aoConcluirEnvioNuvem(snapshot); } catch (e) {}
     }
     if (resposta.ok && !MODO_VISUALIZACAO) {
-      definirArmazenamentoLocal(CHAVE_LOCAL_SINCRONIZADA, CODIGO_FICHA);
+      definirArmazenamentoLocal(obterChaveLocalSincronizada(CODIGO_FICHA), CODIGO_FICHA);
     }
     atualizarStatusNuvem(resposta.ok ? (MODO_VISUALIZACAO ? "Modo mestre: salvo na nuvem" : "☁ Salva na nuvem") : "Erro ao salvar na nuvem (" + resposta.status + ")");
   }).catch(function() {
@@ -366,11 +366,11 @@ function sincronizarFicha(primeiraVez) {
         atualizarStatusNuvem(primeiraVez ? "Ficha não encontrada" : "Esta ficha foi apagada");
         return;
       }
-      if (obterArmazenamentoLocal(CHAVE_LOCAL_SINCRONIZADA) === CODIGO_FICHA) {
+      if (obterArmazenamentoLocal(obterChaveLocalSincronizada(CODIGO_FICHA)) === CODIGO_FICHA) {
         reiniciarFichaApagada();
         return;
       }
-      if (primeiraVez && obterArmazenamentoLocal(CHAVE_LOCAL_FICHA)) salvarFicha();
+      if (primeiraVez && obterDadosFichaArmazenados(CODIGO_FICHA)) salvarFicha();
       return;
     }
 
@@ -383,7 +383,7 @@ function sincronizarFicha(primeiraVez) {
         aplicarDadosNuvem(dados);
         atualizarStatusNuvem(MODO_VISUALIZACAO ? "Modo mestre: ficha atualizada" : "☁ Atualizada pela nuvem");
       }
-    } else if (primeiraVez && !MODO_VISUALIZACAO && obterArmazenamentoLocal(CHAVE_LOCAL_FICHA) && timestampNuvem < timestampAtual) {
+    } else if (primeiraVez && !MODO_VISUALIZACAO && obterDadosFichaArmazenados(CODIGO_FICHA) && timestampNuvem < timestampAtual) {
       salvarFicha();
     }
   });
