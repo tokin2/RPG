@@ -153,7 +153,10 @@ function salvarFicha() {
   var dados = {};
 
   document.querySelectorAll("[data-k]").forEach(function(elemento) {
-    dados[elemento.dataset.k] = elemento.type === "checkbox" ? elemento.checked : elemento.value;
+    var valorCampo = elemento.type === "checkbox"
+      ? elemento.checked
+      : (elemento.value !== undefined ? elemento.value : (elemento.textContent || ""));
+    dados[elemento.dataset.k] = valorCampo;
   });
 
   dados._pericias_ativas = listaPericiasAtivas;
@@ -207,7 +210,7 @@ function carregarFicha() {
 
     if (elemento.type === "checkbox") {
       elemento.checked = Boolean(valor);
-    } else {
+    } else if ("value" in elemento) {
       elemento.value = valor;
     }
   });
