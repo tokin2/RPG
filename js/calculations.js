@@ -61,6 +61,7 @@ var pips = atualizarDadosDaSorte; // Alias
 
 function ajustarAlturaTextareas() {
   document.querySelectorAll(".hx").forEach(function(textarea) {
+    if (textarea.hidden || textarea.offsetParent === null) return;
     textarea.style.height = "auto";
     textarea.style.height = Math.max(30, textarea.scrollHeight + 2) + "px";
   });

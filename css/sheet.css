@@ -405,7 +405,7 @@ button:focus-visible {
 @media (max-width: 900px) {
   .hb,
   .hb.hd {
-    grid-template-columns: 0.7fr 1.3fr 0.9fr 66px;
+    grid-template-columns: 0.7fr 1.3fr 0.9fr 88px;
   }
 
   .hb input[data-k^="hab_tipo_"],
@@ -988,7 +988,7 @@ button.x:hover {
 .hb,
 .hb.hd {
   display: grid;
-  grid-template-columns: 2fr 0.7fr 1.2fr 1.3fr 66px;
+  grid-template-columns: 2fr 0.7fr 1.2fr 1.3fr 88px;
   gap: 4px 10px;
   margin-bottom: 8px;
   align-items: start;
@@ -1024,6 +1024,28 @@ button.x:hover {
 .ac .x:disabled {
   opacity: 0.25;
   cursor: default;
+}
+
+.ac button.eye-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 2px;
+}
+
+.ac button.eye-btn svg {
+  display: block;
+  stroke: var(--muted);
+  transition: stroke 0.15s ease;
+}
+
+.ac button.eye-btn:hover svg {
+  stroke: var(--ink);
+}
+
+.hb.collapsed > .hx,
+.hb > .hx[hidden] {
+  display: none !important;
 }
 
 .hx {

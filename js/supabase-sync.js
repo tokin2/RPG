@@ -141,7 +141,7 @@ function calcularDiferencasHistorico(anterior, novo) {
 
   // 2. Diferenças campo a campo
   Object.keys(novo).forEach(function(chave) {
-    if (chave.charAt(0) === "_") return;
+    if (chave.charAt(0) === "_" || /^hab_oculto_\d+$/.test(chave) || /^ho\d+$/.test(chave)) return;
 
     var m;
     if ((m = /^hab_(?:nome|dano|escala|tipo|descricao)_(\d+)$/.exec(chave)) && adicionadasHabilidades.indexOf(m[1]) >= 0) return;

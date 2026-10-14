@@ -160,6 +160,7 @@ function converterChaveParaNovo(chave) {
   if ((m = /^hs(\d+)$/.exec(chave))) return "hab_escala_" + m[1];
   if ((m = /^ht(\d+)$/.exec(chave))) return "hab_tipo_" + m[1];
   if ((m = /^hx(\d+)$/.exec(chave))) return "hab_descricao_" + m[1];
+  if ((m = /^ho(\d+)$/.exec(chave))) return "hab_oculto_" + m[1];
   return chave;
 }
 
@@ -178,6 +179,7 @@ function converterChaveParaLegado(chave) {
   if ((m = /^hab_escala_(\d+)$/.exec(chave))) return "hs" + m[1];
   if ((m = /^hab_tipo_(\d+)$/.exec(chave))) return "ht" + m[1];
   if ((m = /^hab_descricao_(\d+)$/.exec(chave))) return "hx" + m[1];
+  if ((m = /^hab_oculto_(\d+)$/.exec(chave))) return "ho" + m[1];
   return chave;
 }
 
