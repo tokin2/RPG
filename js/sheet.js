@@ -265,102 +265,57 @@ var srtskBtn = document.getElementById("srtsk");
 if (srtskBtn) srtskBtn.onclick = ordenarPericiasAZ;
 
 // Restaurar Perícias Padrão
+// Restaurar Perícias Padrão (Limpa tudo para o padrão inicial: 18 perícias A-Z, desmarcadas e sem bônus adicionais)
 var rstskBtn = document.getElementById("rstsk");
 if (rstskBtn) {
   rstskBtn.onclick = function() {
-    // 1. Salvar dados atuais da tela primeiro para capturar proficiências (checkboxes) e valores de 'outros'
     salvarFicha();
 
-    // 2. Obter os dados completos atuais
     var dados = (typeof MEMORIA_FICHA !== "undefined" && MEMORIA_FICHA) ? MEMORIA_FICHA : {};
 
-    // 3. Filtrar lista de perícias ativas:
-    // - Remove perícias legadas de Tormenta (índices 18 a 99)
-    // - Preserva perícias customizadas (>= 100) que tenham nome preenchido
-    listaPericiasAtivas = (listaPericiasAtivas || []).filter(function(id) {
-      if (id >= 18 && id < 100) return false;
-      if (id >= 100) {
-        var elNome = document.querySelector('[data-k="pericia_nome_' + id + '"]');
-        var nomeCustom = (elNome ? elNome.value : (dados["pericia_nome_" + id] || "")).trim();
-        return Boolean(nomeCustom);
-      }
-      return true;
-    });
+    // 1. Restaurar lista estritamente para as 18 perícias padrão do BG3/D&D 5e
+    listaPericiasAtivas = INDICES_PERICIAS_INICIAIS.slice();
+    list = listaPericiasAtivas;
 
-    // 4. Garantir que todas as 18 perícias padrão do BG3/D&D 5e (0 a 17) estejam presentes
-    INDICES_PERICIAS_INICIAIS.forEach(function(i) {
-      if (listaPericiasAtivas.indexOf(i) < 0) {
-        listaPericiasAtivas.push(i);
-      }
-    });
-
-    // 5. Para as 18 perícias padrão:
+    // 2. Para as 18 perícias padrão:
     // - Restaurar o nome oficial da tabela PERICIAS_PADRAO
     // - Restaurar o atributo base padrão oficial da tabela PERICIAS_PADRAO
-    // - Preservar a proficiência (checkbox 'pericia_treinada_') se o jogador já tiver marcado
-    // - Preservar o modificador 'outros' ('pericia_outros_') se o jogador tiver preenchido
+    // - Resetar proficiência (desmarca todas as caixas de seleção)
+    // - Resetar modificador 'outros' para 0
     INDICES_PERICIAS_INICIAIS.forEach(function(i) {
       if (PERICIAS_PADRAO[i]) {
         dados["pericia_nome_" + i] = PERICIAS_PADRAO[i][0];
         dados["pericia_atributo_" + i] = PERICIAS_PADRAO[i][1];
-
-        var elTreino = document.querySelector('[data-k="pericia_treinada_' + i + '"]');
-        if (elTreino) {
-          dados["pericia_treinada_" + i] = elTreino.checked;
-        } else if (dados["pericia_treinada_" + i] === undefined) {
-          dados["pericia_treinada_" + i] = false;
-        }
-
-        var elOutros = document.querySelector('[data-k="pericia_outros_' + i + '"]');
-        if (elOutros && elOutros.value !== "") {
-          dados["pericia_outros_" + i] = parseInt(elOutros.value, 10) || 0;
-        } else if (dados["pericia_outros_" + i] === undefined) {
-          dados["pericia_outros_" + i] = 0;
-        }
+        dados["pericia_treinada_" + i] = false;
+        dados["pericia_outros_" + i] = 0;
       }
     });
 
-    // 6. Limpar chaves legadas obsoletas (18 a 99) dos dados
-    for (var k = 18; k < 100; k++) {
-      delete dados["pericia_nome_" + k];
-      delete dados["pericia_atributo_" + k];
-      delete dados["pericia_treinada_" + k];
-      delete dados["pericia_outros_" + k];
-      delete dados["pericia_total_" + k];
-      delete dados["sn" + k];
-      delete dados["sa" + k];
-      delete dados["t" + k];
-      delete dados["o" + k];
-      delete dados["s" + k];
-    }
-
-    // 7. Ordenar as perícias ativas em ordem alfabética A-Z
-    function extrairNome(indice) {
-      if (PERICIAS_PADRAO[indice]) return PERICIAS_PADRAO[indice][0];
-      var el = document.querySelector('[data-k="pericia_nome_' + indice + '"]');
-      return (el ? el.value : (dados["pericia_nome_" + indice] || "")).trim();
-    }
-    listaPericiasAtivas.sort(function(a, b) {
-      var nomeA = extrairNome(a), nomeB = extrairNome(b);
-      if (!nomeA && nomeB) return 1;
-      if (nomeA && !nomeB) return -1;
-      return nomeA.localeCompare(nomeB, "pt-BR", { sensitivity: "base" });
+    // 3. Limpar quaisquer chaves de perícias legadas ou customizadas extras
+    Object.keys(dados).forEach(function(chave) {
+      var m = /^pericia_(?:treinada|nome|atributo|outros|total)_(\d+)$/.exec(chave);
+      if (m && +m[1] >= 18) {
+        delete dados[chave];
+      }
+      var mLeg = /^(?:sn|sa|t|o|s)(\d+)$/.exec(chave);
+      if (mLeg && +mLeg[1] >= 18) {
+        delete dados[chave];
+      }
     });
 
-    // 8. Atualizar listas e metadados no objeto e variáveis globais
+    // 4. Atualizar metadados e estado na memória
     dados._pericias_ativas = listaPericiasAtivas.slice();
     dados._list = listaPericiasAtivas.slice();
-    list = listaPericiasAtivas;
     MEMORIA_FICHA = dados;
     MEM = dados;
 
-    // 9. Salvar lista de perícias localmente
+    // 5. Salvar lista e dados localmente
     salvarListaPericias();
     if (!MODO_VISUALIZACAO) {
       gravarFichaLocal(dados, CODIGO_FICHA);
     }
 
-    // 10. Re-renderizar o DOM e carregar todos os dados (nomes, atributos, proficiências e outros)
+    // 6. Re-renderizar o DOM, recarregar os campos e recalcular tudo
     renderizarPericias();
     carregarFicha();
     calcularFicha();
