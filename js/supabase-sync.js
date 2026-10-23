@@ -318,7 +318,9 @@ function aplicarDadosNuvem(dados) {
 
   var periciasLista = dadosNormalizados._pericias_ativas || dadosNormalizados._list;
   if (Array.isArray(periciasLista)) {
-    listaPericiasAtivas = periciasLista;
+    listaPericiasAtivas = periciasLista.filter(function(id) {
+      return typeof id === "number" && (id < 18 || id >= 100);
+    });
     list = listaPericiasAtivas;
   }
 

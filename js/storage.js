@@ -191,7 +191,7 @@ if (!MODO_VISUALIZACAO) {
 function validarPericiasValidas(lista) {
   if (!Array.isArray(lista) || lista.length === 0) return false;
   for (var i = 0; i < lista.length; i++) {
-    if (typeof lista[i] !== "number" || (lista[i] > 17 && lista[i] < 99)) {
+    if (typeof lista[i] !== "number" || (lista[i] > 17 && lista[i] < 100)) {
       return false;
     }
   }
@@ -258,20 +258,21 @@ function migrarDadosLegados(dados) {
   if (dados._ts && !dadosMigrados._timestamp) dadosMigrados._timestamp = dados._ts;
 
   // Migração v3 -> v4 (Perícias Baldur's Gate 3 / D&D 5e em ordem alfabética)
-  var listaPer = dadosMigrados._pericias_ativas || dadosMigrados._list;
-  var precisaMigrarPericias = false;
-  if (!Array.isArray(listaPer) || listaPer.length !== INDICES_PERICIAS_INICIAIS.length) {
-    precisaMigrarPericias = true;
-  } else {
-    for (var p = 0; p < listaPer.length; p++) {
-      if (listaPer[p] > 17) {
-        precisaMigrarPericias = true;
-        break;
+  var jaMigradoParaBg3 = Boolean(dadosMigrados._bg3_pericias && dadosMigrados._schema_versao && dadosMigrados._schema_versao >= 4);
+  if (!jaMigradoParaBg3) {
+    var listaPer = dadosMigrados._pericias_ativas || dadosMigrados._list;
+    var precisaMigrarPericias = false;
+    if (!Array.isArray(listaPer) || listaPer.length !== INDICES_PERICIAS_INICIAIS.length) {
+      precisaMigrarPericias = true;
+    } else {
+      for (var p = 0; p < listaPer.length; p++) {
+        if (listaPer[p] > 17 && listaPer[p] < 100) {
+          precisaMigrarPericias = true;
+          break;
+        }
       }
     }
-  }
 
-  if (precisaMigrarPericias || !dadosMigrados._bg3_pericias || !dadosMigrados._schema_versao || dadosMigrados._schema_versao < 4) {
     if (precisaMigrarPericias) {
       // Mapeamento inteligente de proficiências previamente marcadas na ficha do jogador
       var nomesTreinados = {};
@@ -374,7 +375,9 @@ if (!MODO_VISUALIZACAO) {
     DADOS_INICIAIS = migrarDadosLegados(bruto);
     gravarFichaLocal(DADOS_INICIAIS, CODIGO_FICHA);
     if (Array.isArray(DADOS_INICIAIS._pericias_ativas)) {
-      listaPericiasAtivas = DADOS_INICIAIS._pericias_ativas;
+      listaPericiasAtivas = DADOS_INICIAIS._pericias_ativas.filter(function(id) {
+        return typeof id === "number" && (id < 18 || id >= 100);
+      });
       list = listaPericiasAtivas;
       salvarListaPericias();
     }
