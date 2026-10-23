@@ -29,7 +29,7 @@ function calcularModificadorAtributo(identificador) {
     attrNome = MAPA_ATRIBUTO_LEGADO[identificador];
   }
   var el = document.getElementById("atr_" + attrNome) ||
-           document.getElementById("v-" + identificador);
+    document.getElementById("v-" + identificador);
   var valor = el ? parseInt(el.value, 10) : 10;
   if (isNaN(valor)) valor = 10;
   return Math.floor((valor - 10) / 2);
@@ -60,7 +60,7 @@ function atualizarDadosDaSorte() {
 var pips = atualizarDadosDaSorte; // Alias
 
 function ajustarAlturaTextareas() {
-  document.querySelectorAll(".hx").forEach(function(textarea) {
+  document.querySelectorAll(".hx").forEach(function (textarea) {
     if (textarea.hidden || textarea.offsetParent === null) return;
     textarea.style.height = "auto";
     textarea.style.height = Math.max(30, textarea.scrollHeight + 2) + "px";
@@ -75,7 +75,7 @@ function calcularFicha() {
   else if (typeof showPic === "function") showPic();
 
   // 1. Modificadores dos 6 Atributos
-  ATRIBUTOS_PADRAO.forEach(function(attr) {
+  ATRIBUTOS_PADRAO.forEach(function (attr) {
     var idMod = document.getElementById("mod_" + attr[0]) || document.getElementById("m-" + attr[0]);
     if (idMod) idMod.textContent = formatarSinal(calcularModificadorAtributo(attr[0]));
   });
@@ -102,40 +102,39 @@ function calcularFicha() {
     elementoCargaUsada.className = (limiteCarga > 0 && pesoTotal > limiteCarga) ? "over" : "";
   }
 
-  // 3. Bônus de Proficiência de Tormenta20
+  // 3. Bônus de Proficiência (D&D 5e / Baldur's Gate 3)
   var nivelAtual = Math.max(1, Math.min(20, obterNumero("nivel") || 1));
+  var bonusProficiencia = 2 + Math.floor((nivelAtual - 1) / 4);
   var profEl = document.getElementById("prof");
-  if (profEl) profEl.textContent = "+" + (2 + Math.floor((nivelAtual - 1) / 4));
+  if (profEl) profEl.textContent = "+" + bonusProficiencia;
 
-  // 4. Perícias T20: metade do nível + modificador + treino + outros
-  var metadeNivel = Math.floor(nivelAtual / 2);
-  var bonusTreino = nivelAtual >= 15 ? 6 : nivelAtual >= 7 ? 4 : 2;
-
+  // 4. Perícias BG3 / D&D 5e: Modificador do Atributo + Bônus de Proficiência (se treinada) + Outros
   var listaPericias = typeof listaPericiasAtivas !== "undefined" ? listaPericiasAtivas : list;
   if (Array.isArray(listaPericias)) {
-    listaPericias.forEach(function(indice) {
+    listaPericias.forEach(function (indice) {
       var treinadaEl = document.getElementById("pericia_treinada_" + indice) || document.getElementById("t" + indice);
-      var treino = (treinadaEl && treinadaEl.checked) ? bonusTreino : 0;
+      var treino = (treinadaEl && treinadaEl.checked) ? bonusProficiencia : 0;
 
       var attrSelect = document.getElementById("pericia_atributo_" + indice) || document.getElementById("sa" + indice);
       var atributoEscolhido = attrSelect ? attrSelect.value : "forca";
 
-      var outrosValor = obterNumero("pericia_outros_" + indice) || obterNumero("o" + indice);
+      var elOutros = document.getElementById("pericia_outros_" + indice) || document.getElementById("o" + indice);
+      var outrosValor = elOutros ? (parseInt(elOutros.value, 10) || 0) : 0;
       var totalSkillEl = document.getElementById("pericia_total_" + indice) || document.getElementById("s" + indice);
 
       if (totalSkillEl) {
-        totalSkillEl.textContent = formatarSinal(metadeNivel + calcularModificadorAtributo(atributoEscolhido) + treino + outrosValor);
+        totalSkillEl.textContent = formatarSinal(calcularModificadorAtributo(atributoEscolhido) + treino + outrosValor);
       }
     });
   }
 
-  // 5. Iniciativa (espelhada da perícia índice 12 - Iniciativa)
-  var skillIni = document.getElementById("pericia_total_12") || document.getElementById("s12");
+  // 5. Iniciativa (D&D 5e / Baldur's Gate 3: igual ao modificador de Destreza)
   var iniBadge = document.getElementById("ini");
-  if (iniBadge) iniBadge.textContent = skillIni ? skillIni.textContent : "—";
+  if (iniBadge) iniBadge.textContent = formatarSinal(calcularModificadorAtributo("destreza"));
 
   // 6. Defesa: 10 + Destreza + Bônus Adicional
-  var bonusDefesa = obterNumero("defesa_bonus") || obterNumero("defx");
+  var elBonusDef = document.getElementById("defesa_bonus") || document.getElementById("defx");
+  var bonusDefesa = elBonusDef ? (parseInt(elBonusDef.value, 10) || 0) : 0;
   var defesaEl = document.getElementById("defesa");
   if (defesaEl) defesaEl.textContent = 10 + calcularModificadorAtributo("destreza") + bonusDefesa;
 

@@ -21,7 +21,18 @@ function exibirMensagemStatus(texto) {
     el.hidden = !texto;
   }
 }
-var say = exibirMensagemStatus; // Alias
+function obterLinkFicha(id, modo) {
+  var param = modo === "ro" ? "&ro=1" : "&e=1";
+  var baseUrl = "index.html";
+  if (typeof window !== "undefined" && window.location && window.location.protocol !== "file:") {
+    var path = window.location.pathname || "";
+    if (path.endsWith("/mestre") || path === "/mestre") {
+      baseUrl = "./";
+    }
+  }
+  return baseUrl + "?f=" + encodeURIComponent(id) + param;
+}
+
 
 function carregarFichasMesa() {
   fetch(URL_SUPABASE + "/rest/v1/fichas?select=id,dados,updated_at&order=updated_at.desc", {
@@ -58,13 +69,16 @@ function carregarFichasMesa() {
 
         var atualizadoEm = new Date(registro.updated_at).toLocaleString("pt-BR");
 
+        var linkOlhar = obterLinkFicha(registro.id, "ro");
+        var linkEditar = obterLinkFicha(registro.id, "e");
+
         return '<div class="card"><h2>' + escaparHtml(d.nome || "Sem nome") + '</h2><div class="m">' +
                escaparHtml([d.raca, d.classe].filter(Boolean).join(" · ")) + (d.nivel ? " · nível " + escaparHtml(d.nivel) : "") + '</div>' +
                '<div class="row"><span>PV</span><b>' + converterParaInteiro(pvAtual) + ' / ' + converterParaInteiro(pvMax) + '</b></div><div class="bar"><i style="width:' + calcularPorcentagem(converterParaInteiro(pvAtual), converterParaInteiro(pvMax)) + '%;background:var(--pv)"></i></div>' +
                '<div class="row"><span>PM</span><b>' + converterParaInteiro(pmAtual) + ' / ' + converterParaInteiro(pmMax) + '</b></div><div class="bar"><i style="width:' + calcularPorcentagem(converterParaInteiro(pmAtual), converterParaInteiro(pmMax)) + '%;background:var(--pm)"></i></div>' +
                '<div class="row"><span>Defesa <span class="def">' + def + '</span></span><span style="color:var(--muted);font-size:12px">' + escaparHtml(atualizadoEm) + '</span></div>' +
                '<div class="row" style="margin-top:6px"><span>Dado da sorte</span><b>' + Math.max(0, Math.min(3, converterParaInteiro(dadoSorte))) + ' / 3</b></div>' +
-               '<a class="b" href="index.html?f=' + encodeURIComponent(registro.id) + '&ro=1">Só olhar</a><a class="b" href="index.html?f=' + encodeURIComponent(registro.id) + '&e=1">Editar ficha</a><button type="button" class="hbtn" data-hist="' + escaparHtml(registro.id) + '">Histórico</button><button type="button" class="del" data-id="' + escaparHtml(registro.id) + '">Apagar ficha</button><div class="codew"><button type="button" class="code" data-code="' + escaparHtml(registro.id) + '" title="Toque para copiar o código">Código: <b>' + escaparHtml(registro.id) + '</b></button></div></div>';
+               '<a class="b" href="' + linkOlhar + '" data-id="' + escaparHtml(registro.id) + '" data-modo="ro">Só olhar</a><a class="b" href="' + linkEditar + '" data-id="' + escaparHtml(registro.id) + '" data-modo="e">Editar ficha</a><button type="button" class="hbtn" data-hist="' + escaparHtml(registro.id) + '">Histórico</button><button type="button" class="del" data-id="' + escaparHtml(registro.id) + '">Apagar ficha</button><div class="codew"><button type="button" class="code" data-code="' + escaparHtml(registro.id) + '" title="Toque para copiar o código">Código: <b>' + escaparHtml(registro.id) + '</b></button></div></div>';
       }).join("");
     }
   })
@@ -79,6 +93,21 @@ var load = carregarFichasMesa; // Alias
 
 var gridContainer = document.getElementById("g");
 if (gridContainer) {
+  // Salva intenção de navegação para a ficha (garante abertura mesmo se o servidor estático fizer redirect descartando a query string)
+  gridContainer.addEventListener("click", function(e) {
+    var link = e.target.closest && e.target.closest("a.b");
+    if (!link) return;
+    var id = link.dataset.id;
+    var modo = link.dataset.modo || "ro";
+    if (id) {
+      var payload = { id: id, modo: modo, ts: Date.now() };
+      try {
+        sessionStorage.setItem("ficha_mestre_ativa", JSON.stringify(payload));
+        localStorage.setItem("ficha_mestre_ativa", JSON.stringify(payload));
+      } catch (err) {}
+    }
+  });
+
   // Confirmação de exclusão da ficha em dois toques
   gridContainer.addEventListener("click", function(e) {
     var b = e.target.closest && e.target.closest(".del");

@@ -268,11 +268,20 @@ if (srtskBtn) srtskBtn.onclick = ordenarPericiasAZ;
 var rstskBtn = document.getElementById("rstsk");
 if (rstskBtn) {
   rstskBtn.onclick = function() {
-    salvarFicha();
     INDICES_PERICIAS_INICIAIS.forEach(function(i) {
       if (listaPericiasAtivas.indexOf(i) < 0) listaPericiasAtivas.push(i);
     });
     list = listaPericiasAtivas;
+    renderizarPericias();
+    INDICES_PERICIAS_INICIAIS.forEach(function(i) {
+      if (PERICIAS_PADRAO[i]) {
+        var inputNome = document.querySelector('[data-k="pericia_nome_' + i + '"]');
+        if (inputNome) inputNome.value = PERICIAS_PADRAO[i][0];
+        var selectAttr = document.querySelector('[data-k="pericia_atributo_' + i + '"]');
+        if (selectAttr) selectAttr.value = PERICIAS_PADRAO[i][1];
+      }
+    });
+    salvarFicha();
     ordenarPericiasAZ();
   };
 }
@@ -480,13 +489,23 @@ if (MODO_VISUALIZACAO) {
   if (btnToggleEdicao) {
     btnToggleEdicao.onclick = function() { bloquearEdicaoModoMestre(MODO_EDICAO); };
   }
-  var somenteLeitura = Boolean(PARAMETROS_URL.get("ro"));
-  bloquearEdicaoModoMestre(!PARAMETROS_URL.get("e") || somenteLeitura);
+  var somenteLeitura = Boolean(PARAMETROS_URL.get("ro") || (typeof MODO_LEITURA_URL !== "undefined" && MODO_LEITURA_URL));
+  var modoEdicaoLiberada = Boolean(PARAMETROS_URL.get("e") || (typeof MODO_EDICAO_URL !== "undefined" && MODO_EDICAO_URL));
+  bloquearEdicaoModoMestre(!modoEdicaoLiberada || somenteLeitura);
   if (somenteLeitura && btnToggleEdicao) btnToggleEdicao.hidden = true;
 
   atualizarStatusNuvem("Modo mestre: carregando…");
   sincronizarFicha(true);
 } else {
+  var barraMestre = document.getElementById("mbar");
+  if (barraMestre) barraMestre.hidden = true;
+  var boxCodigo = document.getElementById("codebox");
+  if (boxCodigo) boxCodigo.style.display = "";
+  var btnLimpar = document.getElementById("clear");
+  if (btnLimpar) btnLimpar.style.display = "";
+  var fichaContainer = document.getElementById("sheet");
+  if (fichaContainer) fichaContainer.inert = false;
+
   var spanCodigo = document.getElementById("code");
   if (spanCodigo) spanCodigo.textContent = CODIGO_FICHA;
   var msgMestre = obterArmazenamentoLocal("ficha-tormenta-msg");

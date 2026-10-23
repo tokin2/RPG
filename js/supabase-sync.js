@@ -306,6 +306,7 @@ function buscarFichaNuvem(codigo, callback) {
   })
   .catch(function() {
     atualizarStatusNuvem("Não consegui falar com a nuvem");
+    if (typeof callback === "function") callback(null);
   });
 }
 var pull = buscarFichaNuvem; // Alias

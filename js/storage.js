@@ -6,6 +6,34 @@
 var PARAMETROS_URL = new URLSearchParams(location.search);
 var MODO_VISUALIZACAO = PARAMETROS_URL.get("f");
 var CODIGO_JOGADOR_URL = PARAMETROS_URL.get("c") || PARAMETROS_URL.get("id") || PARAMETROS_URL.get("codigo");
+var MODO_EDICAO_URL = PARAMETROS_URL.get("e");
+var MODO_LEITURA_URL = PARAMETROS_URL.get("ro");
+
+// Se a URL não trouxer ?f= E NÃO for um link explícito de jogador (?c=, ?nova),
+// recupera a intenção temporária vinda da mesa do mestre (TTL de 60 segundos)
+if (!MODO_VISUALIZACAO && !CODIGO_JOGADOR_URL && !PARAMETROS_URL.has("nova")) {
+  try {
+    var rawIntent = sessionStorage.getItem("ficha_mestre_ativa") || localStorage.getItem("ficha_mestre_ativa");
+    if (rawIntent) {
+      var intent = JSON.parse(rawIntent);
+      if (intent && intent.id && (Date.now() - (intent.ts || 0) < 60000)) {
+        MODO_VISUALIZACAO = sanitizarCodigo(intent.id);
+        if (intent.modo === "e") {
+          MODO_EDICAO_URL = "1";
+        } else {
+          MODO_LEITURA_URL = "1";
+        }
+      }
+    }
+  } catch (e) {}
+}
+
+// Limpa imediatamente a intenção de ambos os storages para que acessos subsequentes de jogador nunca herdem o modo mestre
+try {
+  sessionStorage.removeItem("ficha_mestre_ativa");
+  localStorage.removeItem("ficha_mestre_ativa");
+} catch (e) {}
+
 var USAR_APENAS_MEMORIA = false;
 var CODIGO_FICHA = "";
 var MODO_EDICAO = false;
@@ -49,7 +77,22 @@ var MEM = MEMORIA_FICHA;
     }
   }
 
-  if (!MODO_VISUALIZACAO) {
+  if (MODO_VISUALIZACAO) {
+    // Garante que a URL reflita ?f= e os modos mestre, mesmo se houve redirect anterior
+    if (window.history && window.history.replaceState) {
+      try {
+        var urlAtual = new URL(window.location.href);
+        if (urlAtual.searchParams.get("f") !== CODIGO_FICHA) {
+          urlAtual.searchParams.set("f", CODIGO_FICHA);
+          if (MODO_LEITURA_URL) urlAtual.searchParams.set("ro", "1");
+          if (MODO_EDICAO_URL) urlAtual.searchParams.set("e", "1");
+          urlAtual.searchParams.delete("c");
+          urlAtual.searchParams.delete("nova");
+          window.history.replaceState(null, "", urlAtual.toString());
+        }
+      } catch (e) {}
+    }
+  } else {
     try {
       localStorage.setItem("ficha-tormenta-code", CODIGO_FICHA);
     } catch (e) {}
@@ -145,7 +188,16 @@ var listaPericiasAtivas = null;
 if (!MODO_VISUALIZACAO) {
   listaPericiasAtivas = obterPericiasArmazenadas(CODIGO_FICHA);
 }
-if (!Array.isArray(listaPericiasAtivas)) {
+function validarPericiasValidas(lista) {
+  if (!Array.isArray(lista) || lista.length === 0) return false;
+  for (var i = 0; i < lista.length; i++) {
+    if (typeof lista[i] !== "number" || (lista[i] > 17 && lista[i] < 99)) {
+      return false;
+    }
+  }
+  return true;
+}
+if (!validarPericiasValidas(listaPericiasAtivas)) {
   listaPericiasAtivas = INDICES_PERICIAS_INICIAIS.slice();
 }
 var list = listaPericiasAtivas; // Alias
@@ -193,14 +245,122 @@ function migrarDadosLegados(dados) {
   var dadosMigrados = {};
   for (var k in dados) {
     var novaChave = typeof converterChaveParaNovo === "function" ? converterChaveParaNovo(k) : k;
-    dadosMigrados[novaChave] = dados[k];
+    var valorCampo = dados[k];
+    if (/^pericia_atributo_\d+$/.test(novaChave) && MAPA_ATRIBUTO_LEGADO && MAPA_ATRIBUTO_LEGADO[valorCampo]) {
+      valorCampo = MAPA_ATRIBUTO_LEGADO[valorCampo];
+    }
+    dadosMigrados[novaChave] = valorCampo;
   }
 
   // Sincronizar listas e flags de metadados
   if (dados._list && !dadosMigrados._pericias_ativas) dadosMigrados._pericias_ativas = dados._list;
   if (dados._hl && !dadosMigrados._habilidades_ordem) dadosMigrados._habilidades_ordem = dados._hl;
   if (dados._ts && !dadosMigrados._timestamp) dadosMigrados._timestamp = dados._ts;
-  dadosMigrados._schema_versao = 3;
+
+  // Migração v3 -> v4 (Perícias Baldur's Gate 3 / D&D 5e em ordem alfabética)
+  var listaPer = dadosMigrados._pericias_ativas || dadosMigrados._list;
+  var precisaMigrarPericias = false;
+  if (!Array.isArray(listaPer) || listaPer.length !== INDICES_PERICIAS_INICIAIS.length) {
+    precisaMigrarPericias = true;
+  } else {
+    for (var p = 0; p < listaPer.length; p++) {
+      if (listaPer[p] > 17) {
+        precisaMigrarPericias = true;
+        break;
+      }
+    }
+  }
+
+  if (precisaMigrarPericias || !dadosMigrados._bg3_pericias || !dadosMigrados._schema_versao || dadosMigrados._schema_versao < 4) {
+    if (precisaMigrarPericias) {
+      // Mapeamento inteligente de proficiências previamente marcadas na ficha do jogador
+      var nomesTreinados = {};
+      var periciasTormentaAntigas = [
+        "Acrobacia", "Adestramento", "Atletismo", "Atuação", "Cavalgar",
+        "Conhecimento", "Cura", "Diplomacia", "Enganação", "Fortitude",
+        "Furtividade", "Guerra", "Iniciativa", "Intimidação", "Intuição",
+        "Investigação", "Jogatina", "Ladinagem", "Luta", "Misticismo",
+        "Nobreza", "Ofício", "Percepção", "Pilotagem", "Pontaria",
+        "Reflexos", "Religião", "Sobrevivência", "Vontade", "Medicina"
+      ];
+      for (var k = 0; k < 30; k++) {
+        var treinado = dadosMigrados["pericia_treinada_" + k] === true || dadosMigrados["pericia_treinada_" + k] === "true" || dados["t" + k] === true || dados["t" + k] === "true";
+        if (treinado) {
+          var nomeAntigo = (dados["pericia_nome_" + k] || dados["sn" + k] || periciasTormentaAntigas[k] || "").trim().toLowerCase();
+          if (nomeAntigo) nomesTreinados[nomeAntigo] = true;
+        }
+      }
+
+      var mapaNomeParaBg3 = {
+        "acrobacia": 0,
+        "adestramento": 1,
+        "adestrar animais": 1,
+        "atuação": 2,
+        "atuacao": 2,
+        "apresentação": 2,
+        "apresentacao": 2,
+        "arcanismo": 3,
+        "misticismo": 3,
+        "furtividade": 4,
+        "história": 5,
+        "historia": 5,
+        "conhecimento": 5,
+        "intimidação": 6,
+        "intimidacao": 6,
+        "intuição": 7,
+        "intuicao": 7,
+        "investigação": 8,
+        "investigacao": 8,
+        "enganação": 9,
+        "enganacao": 9,
+        "manipulação": 9,
+        "manipulacao": 9,
+        "cura": 10,
+        "medicina": 10,
+        "natureza": 11,
+        "percepção": 12,
+        "percepcao": 12,
+        "diplomacia": 13,
+        "persuasão": 13,
+        "persuasao": 13,
+        "atletismo": 14,
+        "preparo físico": 14,
+        "preparo fisico": 14,
+        "ladinagem": 15,
+        "prestidigitação": 15,
+        "prestidigitacao": 15,
+        "religião": 16,
+        "religiao": 16,
+        "sobrevivência": 17,
+        "sobrevivencia": 17
+      };
+
+      var novosTreinados = {};
+      for (var nome in nomesTreinados) {
+        if (mapaNomeParaBg3[nome] !== undefined) {
+          novosTreinados[mapaNomeParaBg3[nome]] = true;
+        }
+      }
+
+      // Limpar campos de perícias legadas além do índice 17
+      for (var oldK = 18; oldK < 35; oldK++) {
+        delete dadosMigrados["pericia_treinada_" + oldK];
+        delete dadosMigrados["pericia_nome_" + oldK];
+        delete dadosMigrados["pericia_atributo_" + oldK];
+        delete dadosMigrados["pericia_outros_" + oldK];
+      }
+
+      dadosMigrados._pericias_ativas = INDICES_PERICIAS_INICIAIS.slice();
+      dadosMigrados._list = dadosMigrados._pericias_ativas;
+      for (var idx = 0; idx < PERICIAS_PADRAO.length; idx++) {
+        dadosMigrados["pericia_nome_" + idx] = PERICIAS_PADRAO[idx][0];
+        dadosMigrados["pericia_atributo_" + idx] = PERICIAS_PADRAO[idx][1];
+        dadosMigrados["pericia_treinada_" + idx] = Boolean(novosTreinados[idx]);
+      }
+    }
+    dadosMigrados._bg3_pericias = true;
+  }
+  dadosMigrados._schema_versao = 4;
 
   return dadosMigrados;
 }
@@ -213,6 +373,11 @@ if (!MODO_VISUALIZACAO) {
   if (bruto) {
     DADOS_INICIAIS = migrarDadosLegados(bruto);
     gravarFichaLocal(DADOS_INICIAIS, CODIGO_FICHA);
+    if (Array.isArray(DADOS_INICIAIS._pericias_ativas)) {
+      listaPericiasAtivas = DADOS_INICIAIS._pericias_ativas;
+      list = listaPericiasAtivas;
+      salvarListaPericias();
+    }
   }
 }
 var D0 = DADOS_INICIAIS; // Alias
@@ -233,7 +398,8 @@ function salvarFicha() {
 
   dados._pericias_ativas = listaPericiasAtivas;
   dados._habilidades_ordem = ordemHabilidades;
-  dados._schema_versao = 3;
+  dados._schema_versao = 4;
+  dados._bg3_pericias = true;
   dados._timestamp = Date.now();
 
   // Aliases nos metadados para garantir compatibilidade retroativa
@@ -279,12 +445,18 @@ function carregarFicha() {
     if (elemento.type === "checkbox") {
       elemento.checked = Boolean(valor);
     } else if ("value" in elemento) {
+      if (elemento.tagName === "SELECT" && MAPA_ATRIBUTO_LEGADO && MAPA_ATRIBUTO_LEGADO[valor]) {
+        valor = MAPA_ATRIBUTO_LEGADO[valor];
+      }
       elemento.value = valor;
     }
   });
 
   if (typeof atualizarVisibilidadeHabilidades === "function") {
     atualizarVisibilidadeHabilidades();
+  }
+  if (typeof exibirImagemPersonagem === "function") {
+    exibirImagemPersonagem();
   }
 }
 var load = carregarFicha; // Alias
