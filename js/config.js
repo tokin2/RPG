@@ -13,7 +13,7 @@ var SB_KEY = CHAVE_PUBLICA_SUPABASE;
 
 // Chaves Base de Armazenamento Local (localStorage)
 var CHAVE_LOCAL_FICHA_BASE = "ficha-tormenta-v1";
-var CHAVE_LOCAL_PERICIAS_BASE = "ficha-tormenta-skills-v4";
+var CHAVE_LOCAL_PERICIAS_BASE = "ficha-tormenta-skills-v5";
 var CHAVE_LOCAL_SINCRONIZADA_BASE = "ficha-tormenta-synced";
 
 // Chaves legadas globais mantidas para retrocompatibilidade
@@ -67,43 +67,31 @@ var MAPA_ATRIBUTO_LEGADO = {
   "car": "carisma"
 };
 
-// Lista de Perícias Padrão: [nome, atributo-base]
+// Lista de Perícias Padrão (Baldur's Gate 3 / D&D 5e em ordem alfabética): [nome, atributo-base]
 var PERICIAS_PADRAO = [
   ["Acrobacia", "destreza"],
-  ["Adestramento", "carisma"],
-  ["Atletismo", "forca"],
-  ["Atuação", "carisma"],
-  ["Cavalgar", "destreza"],
-  ["Conhecimento", "inteligencia"],
-  ["Cura", "sabedoria"],
-  ["Diplomacia", "carisma"],
-  ["Enganação", "carisma"],
-  ["Fortitude", "constituicao"],
+  ["Adestrar animais", "sabedoria"],
+  ["Apresentação", "carisma"],
+  ["Arcanismo", "inteligencia"],
   ["Furtividade", "destreza"],
-  ["Guerra", "inteligencia"],
-  ["Iniciativa", "destreza"],
+  ["História", "inteligencia"],
   ["Intimidação", "carisma"],
   ["Intuição", "sabedoria"],
   ["Investigação", "inteligencia"],
-  ["Jogatina", "carisma"],
-  ["Ladinagem", "destreza"],
-  ["Luta", "forca"],
-  ["Misticismo", "inteligencia"],
-  ["Nobreza", "inteligencia"],
-  ["Ofício", "inteligencia"],
+  ["Manipulação", "carisma"],
+  ["Medicina", "sabedoria"],
+  ["Natureza", "inteligencia"],
   ["Percepção", "sabedoria"],
-  ["Pilotagem", "destreza"],
-  ["Pontaria", "destreza"],
-  ["Reflexos", "destreza"],
-  ["Religião", "sabedoria"],
-  ["Sobrevivência", "sabedoria"],
-  ["Vontade", "sabedoria"],
-  ["Medicina", "sabedoria"]
+  ["Persuasão", "carisma"],
+  ["Preparo Físico", "forca"],
+  ["Prestidigitação", "destreza"],
+  ["Religião", "inteligencia"],
+  ["Sobrevivência", "sabedoria"]
 ];
 var S = PERICIAS_PADRAO; // Alias
 
-// Índices das 25 perícias visíveis inicialmente na ficha
-var INDICES_PERICIAS_INICIAIS = [0, 2, 3, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 17, 18, 29, 19, 20, 21, 22, 24, 25, 26, 27, 28];
+// Índices das 18 perícias padrão visíveis inicialmente na ficha (Ordem Alfabética)
+var INDICES_PERICIAS_INICIAIS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17];
 var DEF = INDICES_PERICIAS_INICIAIS; // Alias
 
 // Mapeamento bidirecional de compatibilidade (Legado <-> Novo)

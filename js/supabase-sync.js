@@ -306,6 +306,7 @@ function buscarFichaNuvem(codigo, callback) {
   })
   .catch(function() {
     atualizarStatusNuvem("Não consegui falar com a nuvem");
+    if (typeof callback === "function") callback(null);
   });
 }
 var pull = buscarFichaNuvem; // Alias
@@ -317,7 +318,9 @@ function aplicarDadosNuvem(dados) {
 
   var periciasLista = dadosNormalizados._pericias_ativas || dadosNormalizados._list;
   if (Array.isArray(periciasLista)) {
-    listaPericiasAtivas = periciasLista;
+    listaPericiasAtivas = periciasLista.filter(function(id) {
+      return typeof id === "number" && (id < 18 || id >= 100);
+    });
     list = listaPericiasAtivas;
   }
 

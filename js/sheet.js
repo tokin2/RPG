@@ -265,15 +265,61 @@ var srtskBtn = document.getElementById("srtsk");
 if (srtskBtn) srtskBtn.onclick = ordenarPericiasAZ;
 
 // Restaurar Perícias Padrão
+// Restaurar Perícias Padrão (Limpa tudo para o padrão inicial: 18 perícias A-Z, desmarcadas e sem bônus adicionais)
 var rstskBtn = document.getElementById("rstsk");
 if (rstskBtn) {
   rstskBtn.onclick = function() {
     salvarFicha();
-    INDICES_PERICIAS_INICIAIS.forEach(function(i) {
-      if (listaPericiasAtivas.indexOf(i) < 0) listaPericiasAtivas.push(i);
-    });
+
+    var dados = (typeof MEMORIA_FICHA !== "undefined" && MEMORIA_FICHA) ? MEMORIA_FICHA : {};
+
+    // 1. Restaurar lista estritamente para as 18 perícias padrão do BG3/D&D 5e
+    listaPericiasAtivas = INDICES_PERICIAS_INICIAIS.slice();
     list = listaPericiasAtivas;
-    ordenarPericiasAZ();
+
+    // 2. Para as 18 perícias padrão:
+    // - Restaurar o nome oficial da tabela PERICIAS_PADRAO
+    // - Restaurar o atributo base padrão oficial da tabela PERICIAS_PADRAO
+    // - Resetar proficiência (desmarca todas as caixas de seleção)
+    // - Resetar modificador 'outros' para 0
+    INDICES_PERICIAS_INICIAIS.forEach(function(i) {
+      if (PERICIAS_PADRAO[i]) {
+        dados["pericia_nome_" + i] = PERICIAS_PADRAO[i][0];
+        dados["pericia_atributo_" + i] = PERICIAS_PADRAO[i][1];
+        dados["pericia_treinada_" + i] = false;
+        dados["pericia_outros_" + i] = 0;
+      }
+    });
+
+    // 3. Limpar quaisquer chaves de perícias legadas ou customizadas extras
+    Object.keys(dados).forEach(function(chave) {
+      var m = /^pericia_(?:treinada|nome|atributo|outros|total)_(\d+)$/.exec(chave);
+      if (m && +m[1] >= 18) {
+        delete dados[chave];
+      }
+      var mLeg = /^(?:sn|sa|t|o|s)(\d+)$/.exec(chave);
+      if (mLeg && +mLeg[1] >= 18) {
+        delete dados[chave];
+      }
+    });
+
+    // 4. Atualizar metadados e estado na memória
+    dados._pericias_ativas = listaPericiasAtivas.slice();
+    dados._list = listaPericiasAtivas.slice();
+    MEMORIA_FICHA = dados;
+    MEM = dados;
+
+    // 5. Salvar lista e dados localmente
+    salvarListaPericias();
+    if (!MODO_VISUALIZACAO) {
+      gravarFichaLocal(dados, CODIGO_FICHA);
+    }
+
+    // 6. Re-renderizar o DOM, recarregar os campos e recalcular tudo
+    renderizarPericias();
+    carregarFicha();
+    calcularFicha();
+    salvarFicha();
   };
 }
 
@@ -480,13 +526,23 @@ if (MODO_VISUALIZACAO) {
   if (btnToggleEdicao) {
     btnToggleEdicao.onclick = function() { bloquearEdicaoModoMestre(MODO_EDICAO); };
   }
-  var somenteLeitura = Boolean(PARAMETROS_URL.get("ro"));
-  bloquearEdicaoModoMestre(!PARAMETROS_URL.get("e") || somenteLeitura);
+  var somenteLeitura = Boolean(PARAMETROS_URL.get("ro") || (typeof MODO_LEITURA_URL !== "undefined" && MODO_LEITURA_URL));
+  var modoEdicaoLiberada = Boolean(PARAMETROS_URL.get("e") || (typeof MODO_EDICAO_URL !== "undefined" && MODO_EDICAO_URL));
+  bloquearEdicaoModoMestre(!modoEdicaoLiberada || somenteLeitura);
   if (somenteLeitura && btnToggleEdicao) btnToggleEdicao.hidden = true;
 
   atualizarStatusNuvem("Modo mestre: carregando…");
   sincronizarFicha(true);
 } else {
+  var barraMestre = document.getElementById("mbar");
+  if (barraMestre) barraMestre.hidden = true;
+  var boxCodigo = document.getElementById("codebox");
+  if (boxCodigo) boxCodigo.style.display = "";
+  var btnLimpar = document.getElementById("clear");
+  if (btnLimpar) btnLimpar.style.display = "";
+  var fichaContainer = document.getElementById("sheet");
+  if (fichaContainer) fichaContainer.inert = false;
+
   var spanCodigo = document.getElementById("code");
   if (spanCodigo) spanCodigo.textContent = CODIGO_FICHA;
   var msgMestre = obterArmazenamentoLocal("ficha-tormenta-msg");
