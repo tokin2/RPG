@@ -401,6 +401,9 @@ function salvarFicha() {
 
   dados._pericias_ativas = listaPericiasAtivas;
   dados._habilidades_ordem = ordemHabilidades;
+  if (typeof HISTORICO_PERICIAS_AUTO !== "undefined" && Array.isArray(HISTORICO_PERICIAS_AUTO)) {
+    dados._historico_pericias_auto = HISTORICO_PERICIAS_AUTO.slice();
+  }
   dados._schema_versao = 4;
   dados._bg3_pericias = true;
   dados._timestamp = Date.now();
@@ -460,6 +463,9 @@ function carregarFicha() {
   }
   if (typeof exibirImagemPersonagem === "function") {
     exibirImagemPersonagem();
+  }
+  if (typeof sincronizarEstadoHistorico === "function") {
+    sincronizarEstadoHistorico(dados);
   }
 }
 var load = carregarFicha; // Alias

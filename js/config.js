@@ -94,6 +94,102 @@ var S = PERICIAS_PADRAO; // Alias
 var INDICES_PERICIAS_INICIAIS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17];
 var DEF = INDICES_PERICIAS_INICIAIS; // Alias
 
+// Lista Oficial de Históricos (Backgrounds) de Baldur's Gate 3 e D&D 5e:
+// Cada histórico concede proficiência em 2 perícias oficiais.
+var HISTORICOS_BG3 = [
+  {
+    id: "acolito",
+    nome: "Acólito",
+    en: "Acolyte",
+    pericias: [7, 16], // Intuição, Religião
+    desc: "Você passou a vida a serviço de um templo ou divindade, realizando rituais sagrados e guiando fiéis."
+  },
+  {
+    id: "charlatao",
+    nome: "Charlatão",
+    en: "Charlatan",
+    pericias: [9, 15], // Manipulação, Prestidigitação
+    desc: "Você domina a arte de enganar, disfarçar e manipular pessoas para conseguir o que deseja."
+  },
+  {
+    id: "criminoso",
+    nome: "Criminoso / Espião",
+    en: "Criminal / Spy",
+    pericias: [4, 9], // Furtividade, Manipulação
+    desc: "Você tem um histórico no submundo do crime, conhecendo contatos ilegais e movimentando-se pelas sombras."
+  },
+  {
+    id: "artista",
+    nome: "Artista",
+    en: "Entertainer",
+    pericias: [0, 2], // Acrobacia, Apresentação
+    desc: "Você floresce diante de plateias, cativando multidões com acrobacias, música, atuação e charme."
+  },
+  {
+    id: "heroi_povo",
+    nome: "Herói do Povo",
+    en: "Folk Hero",
+    pericias: [1, 17], // Adestrar animais, Sobrevivência
+    desc: "Você veio do povo simples e defendeu sua comunidade contra grandes perigos, tornando-se um símbolo de esperança."
+  },
+  {
+    id: "eremita",
+    nome: "Eremita",
+    en: "Hermit",
+    pericias: [10, 16], // Medicina, Religião
+    desc: "Você viveu em reclusão espiritual ou filosófica na natureza, descobrindo verdades profundas sobre o mundo."
+  },
+  {
+    id: "nobre",
+    nome: "Nobre",
+    en: "Noble",
+    pericias: [5, 13], // História, Persuasão
+    desc: "Você nasceu ou foi acolhido na alta corte e nobreza, acostumado com influência, etiqueta e poder político."
+  },
+  {
+    id: "sabio",
+    nome: "Sábio",
+    en: "Sage",
+    pericias: [3, 5], // Arcanismo, História
+    desc: "Você dedicou anos ao estudo acadêmico, manuscritos arcanos e desvendamento dos segredos do multiverso."
+  },
+  {
+    id: "soldado",
+    nome: "Soldado",
+    en: "Soldier",
+    pericias: [14, 6], // Preparo Físico, Intimidação
+    desc: "Treinado nos rigores da guerra e disciplina militar, você enfrentou campos de batalha e sabe inspirar autoridade."
+  },
+  {
+    id: "orfao",
+    nome: "Órfão",
+    en: "Urchin",
+    pericias: [4, 15], // Furtividade, Prestidigitação
+    desc: "Você cresceu sozinho e sem recursos nas ruas implacáveis da cidade, aprendendo a sobreviver na esperteza."
+  },
+  {
+    id: "artesao_guilda",
+    nome: "Artesão de Guilda",
+    en: "Guild Artisan",
+    pericias: [7, 13], // Intuição, Persuasão
+    desc: "Membro respeitado de uma guilda mercantil ou artesanal, você conhece o valor do comércio e das negociações."
+  },
+  {
+    id: "forasteiro",
+    nome: "Forasteiro",
+    en: "Outlander",
+    pericias: [14, 17], // Preparo Físico, Sobrevivência
+    desc: "Você cresceu nos ermos selvagens longe da civilização, conhecendo os perigos da terra e os caminhos da caça."
+  },
+  {
+    id: "assombrado",
+    nome: "Assombrado",
+    en: "Haunted One",
+    pericias: [6, 10], // Intimidação, Medicina
+    desc: "Um evento sombrio ou pulsão terrível marcou sua alma para sempre, tornando seu olhar perturbador e determinado."
+  }
+];
+
 // Mapeamento bidirecional de compatibilidade (Legado <-> Novo)
 var MAPA_CHAVES_LEGADO_PARA_NOVO = {
   "v-for": "atr_forca",
@@ -179,6 +275,7 @@ var DICIONARIO_NOMES_HISTORICO = {
   subtitulo: "Subtítulo",
   raca: "Raça",
   origem: "Origem",
+  historico: "Histórico",
   devocao: "Devoção",
   antecedentes: "Antecedentes",
   vida_atual: "PV atuais",

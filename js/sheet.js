@@ -126,9 +126,10 @@ if (containerPedras) {
   }).join("");
 }
 
-// 2. Inicializar Perícias e Habilidades
+// 2. Inicializar Perícias, Habilidades e Históricos
 renderizarPericias();
 renderizarHabilidades();
+popularSelectHistoricos();
 
 // 3. Inicializar 14 linhas de Inventário
 var containerInventario = document.getElementById("inv");
@@ -150,7 +151,17 @@ document.addEventListener("input", function() {
   salvarFicha();
 });
 
-document.addEventListener("change", function() {
+document.addEventListener("change", function(e) {
+  if (e && e.target && e.target.dataset && e.target.dataset.k) {
+    var matchTreino = /^pericia_treinada_(\d+)$/.exec(e.target.dataset.k);
+    if (matchTreino && typeof HISTORICO_PERICIAS_AUTO !== "undefined" && Array.isArray(HISTORICO_PERICIAS_AUTO)) {
+      var pIdx = parseInt(matchTreino[1], 10);
+      var pos = HISTORICO_PERICIAS_AUTO.indexOf(pIdx);
+      if (pos >= 0) {
+        HISTORICO_PERICIAS_AUTO.splice(pos, 1);
+      }
+    }
+  }
   calcularFicha();
   salvarFicha();
 });
@@ -303,7 +314,15 @@ if (rstskBtn) {
       }
     });
 
-    // 4. Atualizar metadados e estado na memória
+    // 4. Resetar histórico selecionado e atualizar metadados
+    dados.historico = "";
+    HISTORICO_ID_ATUAL = "";
+    HISTORICO_PERICIAS_AUTO = [];
+    dados._historico_pericias_auto = [];
+    var selectHist = document.getElementById("historico");
+    if (selectHist) selectHist.value = "";
+    atualizarCardsModalAtivo();
+
     dados._pericias_ativas = listaPericiasAtivas.slice();
     dados._list = listaPericiasAtivas.slice();
     MEMORIA_FICHA = dados;
@@ -321,6 +340,227 @@ if (rstskBtn) {
     calcularFicha();
     salvarFicha();
   };
+}
+
+// ==========================================================================
+// Sistema de Históricos (Backgrounds - Baldur's Gate 3 / D&D 5e) & Modal
+// ==========================================================================
+
+var HISTORICO_ID_ATUAL = "";
+var HISTORICO_PERICIAS_AUTO = [];
+
+function obterHistoricoPorId(id) {
+  if (!id || typeof HISTORICOS_BG3 === "undefined") return null;
+  var idNorm = String(id).toLowerCase().trim();
+  for (var i = 0; i < HISTORICOS_BG3.length; i++) {
+    if (HISTORICOS_BG3[i].id === idNorm || HISTORICOS_BG3[i].nome.toLowerCase() === idNorm) {
+      return HISTORICOS_BG3[i];
+    }
+  }
+  return null;
+}
+
+function sincronizarEstadoHistorico(dadosOrigem) {
+  var sel = document.getElementById("historico");
+  if (sel) {
+    HISTORICO_ID_ATUAL = sel.value || "";
+    var fonte = dadosOrigem || (typeof MEMORIA_FICHA !== "undefined" && MEMORIA_FICHA);
+    if (fonte && Array.isArray(fonte._historico_pericias_auto)) {
+      HISTORICO_PERICIAS_AUTO = fonte._historico_pericias_auto.slice();
+    }
+    atualizarCardsModalAtivo();
+  }
+}
+
+function popularSelectHistoricos() {
+  var selectEl = document.getElementById("historico");
+  if (!selectEl || typeof HISTORICOS_BG3 === "undefined") return;
+  var valorAtual = selectEl.value;
+  var html = '<option value="">Selecione um Histórico...</option>';
+  HISTORICOS_BG3.forEach(function(h) {
+    var periciasNomes = h.pericias.map(function(pIdx) {
+      return PERICIAS_PADRAO[pIdx] ? PERICIAS_PADRAO[pIdx][0] : "";
+    }).filter(Boolean).join(", ");
+    html += '<option value="' + h.id + '">' + h.nome + (periciasNomes ? ' (' + periciasNomes + ')' : '') + '</option>';
+  });
+  html += '<option value="personalizado">Personalizado / Outro</option>';
+  selectEl.innerHTML = html;
+  if (valorAtual) selectEl.value = valorAtual;
+}
+
+function aplicarHistorico(novoId, silencioso) {
+  if (typeof MODO_VISUALIZACAO !== "undefined" && MODO_VISUALIZACAO && (typeof MODO_EDICAO === "undefined" || !MODO_EDICAO)) return;
+  var selectEl = document.getElementById("historico");
+  var antigoObj = obterHistoricoPorId(HISTORICO_ID_ATUAL);
+  var novoObj = obterHistoricoPorId(novoId);
+
+  // 1. Desmarcar SOMENTE perícias que foram marcadas automaticamente pelo histórico anterior
+  var periciasAuto = Array.isArray(HISTORICO_PERICIAS_AUTO) ? HISTORICO_PERICIAS_AUTO : [];
+  if (antigoObj && antigoObj.id !== (novoObj ? novoObj.id : novoId)) {
+    periciasAuto.forEach(function(idx) {
+      if (novoObj && novoObj.pericias && novoObj.pericias.indexOf(idx) >= 0) return;
+      var chk = document.querySelector('[data-k="pericia_treinada_' + idx + '"]');
+      if (chk) chk.checked = false;
+    });
+  }
+
+  // 2. Marcar as novas perícias e rastrear APENAS as que estavam desmarcadas
+  var novasAuto = [];
+  if (novoObj && Array.isArray(novoObj.pericias)) {
+    novoObj.pericias.forEach(function(idx) {
+      var chk = document.querySelector('[data-k="pericia_treinada_' + idx + '"]');
+      if (chk) {
+        if (!chk.checked) {
+          chk.checked = true;
+          novasAuto.push(idx);
+        } else if (periciasAuto.indexOf(idx) >= 0) {
+          novasAuto.push(idx);
+        }
+      }
+    });
+  }
+  HISTORICO_PERICIAS_AUTO = novasAuto;
+
+  // 3. Atualizar identificador ativo e valor no select
+  HISTORICO_ID_ATUAL = novoObj ? novoObj.id : (novoId || "");
+  if (selectEl && selectEl.value !== HISTORICO_ID_ATUAL) {
+    selectEl.value = HISTORICO_ID_ATUAL;
+  }
+
+  // 4. Atualizar visual do modal se estiver aberto
+  atualizarCardsModalAtivo();
+
+  // 5. Salvar e recalcular
+  if (!silencioso) {
+    calcularFicha();
+    salvarFicha();
+  }
+}
+
+// Modal de Detalhes dos Históricos
+function renderizarCardsModalHistorico(filtroTexto) {
+  var container = document.getElementById("modal_hist_list");
+  if (!container || typeof HISTORICOS_BG3 === "undefined") return;
+
+  var termo = (filtroTexto || "").toLowerCase().trim();
+  var listaFiltrada = HISTORICOS_BG3.filter(function(h) {
+    if (!termo) return true;
+    var periciasNomes = h.pericias.map(function(pIdx) {
+      return PERICIAS_PADRAO[pIdx] ? PERICIAS_PADRAO[pIdx][0].toLowerCase() : "";
+    }).join(" ");
+    return h.nome.toLowerCase().indexOf(termo) >= 0 ||
+           h.en.toLowerCase().indexOf(termo) >= 0 ||
+           h.desc.toLowerCase().indexOf(termo) >= 0 ||
+           periciasNomes.indexOf(termo) >= 0;
+  });
+
+  if (listaFiltrada.length === 0) {
+    container.innerHTML = '<p style="text-align:center;color:var(--muted);padding:24px;font-style:italic">Nenhum histórico encontrado para "' + escaparHtml(termo) + '".</p>';
+    return;
+  }
+
+  var html = listaFiltrada.map(function(h) {
+    var ehAtivo = h.id === HISTORICO_ID_ATUAL;
+    var badgesHtml = h.pericias.map(function(pIdx) {
+      var pNome = PERICIAS_PADRAO[pIdx] ? PERICIAS_PADRAO[pIdx][0] : "";
+      return '<span class="hist-badge">' + pNome + '</span>';
+    }).join("");
+
+    return '<div class="hist-card' + (ehAtivo ? ' active' : '') + '" id="hist_card_' + h.id + '">' +
+      '<div class="hist-card-top">' +
+        '<h4 class="hist-card-title">' + h.nome + ' <span class="hist-card-en">(' + h.en + ')</span></h4>' +
+        '<div class="hist-badge-row">' + badgesHtml + '</div>' +
+      '</div>' +
+      '<p class="hist-card-desc">' + h.desc + '</p>' +
+      '<button type="button" class="btn-select-hist' + (ehAtivo ? ' selected' : '') + '" data-hid="' + h.id + '">' +
+        (ehAtivo ? 'Histórico Selecionado ✓' : 'Selecionar este Histórico') +
+      '</button>' +
+    '</div>';
+  }).join("");
+
+  container.innerHTML = html;
+}
+
+function atualizarCardsModalAtivo() {
+  document.querySelectorAll(".hist-card").forEach(function(card) {
+    var btn = card.querySelector(".btn-select-hist");
+    var hid = btn ? btn.dataset.hid : "";
+    var ehAtivo = hid === HISTORICO_ID_ATUAL;
+    card.classList.toggle("active", ehAtivo);
+    if (btn) {
+      btn.classList.toggle("selected", ehAtivo);
+      btn.textContent = ehAtivo ? "Histórico Selecionado ✓" : "Selecionar este Histórico";
+    }
+  });
+}
+
+function abrirModalHistorico() {
+  var modal = document.getElementById("modal_hist");
+  if (!modal) return;
+  modal.hidden = false;
+  modal.setAttribute("aria-hidden", "false");
+  var inputBusca = document.getElementById("modal_hist_search");
+  if (inputBusca) {
+    inputBusca.value = "";
+    setTimeout(function() { inputBusca.focus(); }, 50);
+  }
+  renderizarCardsModalHistorico("");
+}
+
+function fecharModalHistorico() {
+  var modal = document.getElementById("modal_hist");
+  if (!modal) return;
+  modal.hidden = true;
+  modal.setAttribute("aria-hidden", "true");
+}
+
+// Listeners do Histórico e Modal
+var selectHistorico = document.getElementById("historico");
+if (selectHistorico) {
+  selectHistorico.addEventListener("change", function() {
+    aplicarHistorico(this.value, false);
+  });
+}
+
+var btnAbrirModalHist = document.getElementById("btn_modal_hist");
+if (btnAbrirModalHist) btnAbrirModalHist.onclick = abrirModalHistorico;
+
+var btnFecharModalHist = document.getElementById("btn_close_modal_hist");
+if (btnFecharModalHist) btnFecharModalHist.onclick = fecharModalHistorico;
+
+var modalHistBackdrop = document.getElementById("modal_hist");
+if (modalHistBackdrop) {
+  modalHistBackdrop.addEventListener("click", function(e) {
+    if (e.target === modalHistBackdrop) fecharModalHistorico();
+  });
+}
+
+document.addEventListener("keydown", function(e) {
+  if (e.key === "Escape") {
+    var modal = document.getElementById("modal_hist");
+    if (modal && !modal.hidden) fecharModalHistorico();
+  }
+});
+
+var inputBuscaHist = document.getElementById("modal_hist_search");
+if (inputBuscaHist) {
+  inputBuscaHist.addEventListener("input", function() {
+    renderizarCardsModalHistorico(this.value);
+  });
+}
+
+var listaModalHist = document.getElementById("modal_hist_list");
+if (listaModalHist) {
+  listaModalHist.addEventListener("click", function(e) {
+    if (typeof MODO_VISUALIZACAO !== "undefined" && MODO_VISUALIZACAO && (typeof MODO_EDICAO === "undefined" || !MODO_EDICAO)) return;
+    var btn = e.target.closest && e.target.closest(".btn-select-hist");
+    if (!btn || btn.classList.contains("selected")) return;
+    var hid = btn.dataset.hid;
+    if (hid) {
+      aplicarHistorico(hid, false);
+      fecharModalHistorico();
+    }
+  });
 }
 
 // Reordenar Habilidades (Mover cima / baixo)
@@ -505,6 +745,10 @@ if (MODO_VISUALIZACAO) {
     EDIT = MODO_EDICAO;
     var fichaContainer = document.getElementById("sheet");
     if (fichaContainer) fichaContainer.inert = bloquear;
+    var selHist = document.getElementById("historico");
+    if (selHist) selHist.disabled = bloquear;
+    var btnHist = document.getElementById("btn_modal_hist");
+    if (btnHist) btnHist.disabled = bloquear;
     var barraMestre = document.getElementById("mbar");
     if (barraMestre) {
       barraMestre.hidden = false;

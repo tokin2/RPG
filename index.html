@@ -27,7 +27,25 @@
     <label class="ir"><span class="il">Origem</span><input data-k="origem"></label>
     <label class="ir"><span class="il">Classe</span><input data-k="classe"></label>
     <label class="ir"><span class="il">Nível</span><input data-k="nivel" id="nivel" type="number" min="1" max="20" value="1"></label>
-    <label class="ir full"><span class="il">Devoção</span><input data-k="devocao"></label>
+    <label class="ir hist-wrap">
+      <span class="il">Histórico</span>
+      <span class="hist-field-group">
+        <select data-k="historico" id="historico" aria-label="Histórico do personagem">
+          <option value="">Selecione...</option>
+        </select>
+        <button type="button" id="btn_modal_hist" class="btn-hist-info" title="Ver catálogo de históricos (BG3 / D&D 5e)" aria-label="Ver catálogo de históricos">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+            <line x1="6" y1="8" x2="8" y2="8"/>
+            <line x1="6" y1="12" x2="8" y2="12"/>
+            <line x1="16" y1="8" x2="18" y2="8"/>
+            <line x1="16" y1="12" x2="18" y2="12"/>
+          </svg>
+        </button>
+      </span>
+    </label>
+    <label class="ir"><span class="il">Devoção</span><input data-k="devocao"></label>
     <label class="ir full bg"><span class="il">Antecedentes</span><textarea class="hx" rows="2" data-k="antecedentes" placeholder="História e antecedentes do personagem..."></textarea></label>
   </div>
 </div>
@@ -82,6 +100,20 @@
 </div>
 
 <div class="foot"><span class="box" style="padding:4px 10px" id="cloud">Alterações são salvas neste navegador.</span><span class="box" id="codebox" style="padding:4px 10px">Código da ficha: <b id="code"></b> <button type="button" id="copybtn" title="Copiar link desta ficha para abrir em outra aba ou enviar">Copiar link</button> <button type="button" id="chcode">Usar outro código</button> <button type="button" id="newcode" title="Criar uma nova ficha em branco">Nova ficha</button></span><span class="box" style="padding:4px 10px"><button id="print">Imprimir</button> <button id="clear">Limpar ficha</button></span></div>
+</div>
+
+<!-- Modal de Detalhes dos Históricos (Baldur's Gate 3 & D&D 5e) -->
+<div id="modal_hist" class="modal-backdrop" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="modal_hist_title">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3 id="modal_hist_title">Históricos de Baldur's Gate 3 & D&D 5e</h3>
+      <button type="button" class="modal-close" id="btn_close_modal_hist" aria-label="Fechar modal">&times;</button>
+    </div>
+    <div class="modal-search-box">
+      <input type="text" id="modal_hist_search" placeholder="Buscar por histórico ou perícia (ex: Acólito, Furtividade)..." aria-label="Buscar histórico">
+    </div>
+    <div class="modal-body" id="modal_hist_list"></div>
+  </div>
 </div>
 
 <script src="js/config.js"></script>
