@@ -461,6 +461,9 @@ function carregarFicha() {
   if (typeof exibirImagemPersonagem === "function") {
     exibirImagemPersonagem();
   }
+  if (typeof sincronizarEstadoHistorico === "function") {
+    sincronizarEstadoHistorico();
+  }
 }
 var load = carregarFicha; // Alias
 

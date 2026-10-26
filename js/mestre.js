@@ -72,8 +72,23 @@ function carregarFichasMesa() {
         var linkOlhar = obterLinkFicha(registro.id, "ro");
         var linkEditar = obterLinkFicha(registro.id, "e");
 
+        var historicoNome = "";
+        if (d.historico) {
+          if (typeof HISTORICOS_BG3 !== "undefined") {
+            var hFound = HISTORICOS_BG3.find(function(h) {
+              return h.id === d.historico || h.nome.toLowerCase() === String(d.historico).toLowerCase();
+            });
+            historicoNome = hFound ? hFound.nome : (d.historico === "personalizado" ? "Personalizado" : d.historico);
+          } else {
+            historicoNome = d.historico;
+          }
+        }
+
+        var subtituloPartes = [d.raca, d.classe, historicoNome].filter(Boolean);
+        var subtituloTexto = subtituloPartes.join(" · ") + (d.nivel ? (subtituloPartes.length ? " · nível " : "Nível ") + d.nivel : "");
+
         return '<div class="card"><h2>' + escaparHtml(d.nome || "Sem nome") + '</h2><div class="m">' +
-               escaparHtml([d.raca, d.classe].filter(Boolean).join(" · ")) + (d.nivel ? " · nível " + escaparHtml(d.nivel) : "") + '</div>' +
+               escaparHtml(subtituloTexto) + '</div>' +
                '<div class="row"><span>PV</span><b>' + converterParaInteiro(pvAtual) + ' / ' + converterParaInteiro(pvMax) + '</b></div><div class="bar"><i style="width:' + calcularPorcentagem(converterParaInteiro(pvAtual), converterParaInteiro(pvMax)) + '%;background:var(--pv)"></i></div>' +
                '<div class="row"><span>PM</span><b>' + converterParaInteiro(pmAtual) + ' / ' + converterParaInteiro(pmMax) + '</b></div><div class="bar"><i style="width:' + calcularPorcentagem(converterParaInteiro(pmAtual), converterParaInteiro(pmMax)) + '%;background:var(--pm)"></i></div>' +
                '<div class="row"><span>Defesa <span class="def">' + def + '</span></span><span style="color:var(--muted);font-size:12px">' + escaparHtml(atualizadoEm) + '</span></div>' +
