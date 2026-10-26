@@ -151,7 +151,17 @@ document.addEventListener("input", function() {
   salvarFicha();
 });
 
-document.addEventListener("change", function() {
+document.addEventListener("change", function(e) {
+  if (e && e.target && e.target.dataset && e.target.dataset.k) {
+    var matchTreino = /^pericia_treinada_(\d+)$/.exec(e.target.dataset.k);
+    if (matchTreino && typeof HISTORICO_PERICIAS_AUTO !== "undefined" && Array.isArray(HISTORICO_PERICIAS_AUTO)) {
+      var pIdx = parseInt(matchTreino[1], 10);
+      var pos = HISTORICO_PERICIAS_AUTO.indexOf(pIdx);
+      if (pos >= 0) {
+        HISTORICO_PERICIAS_AUTO.splice(pos, 1);
+      }
+    }
+  }
   calcularFicha();
   salvarFicha();
 });
@@ -307,6 +317,8 @@ if (rstskBtn) {
     // 4. Resetar histórico selecionado e atualizar metadados
     dados.historico = "";
     HISTORICO_ID_ATUAL = "";
+    HISTORICO_PERICIAS_AUTO = [];
+    dados._historico_pericias_auto = [];
     var selectHist = document.getElementById("historico");
     if (selectHist) selectHist.value = "";
     atualizarCardsModalAtivo();
@@ -335,6 +347,7 @@ if (rstskBtn) {
 // ==========================================================================
 
 var HISTORICO_ID_ATUAL = "";
+var HISTORICO_PERICIAS_AUTO = [];
 
 function obterHistoricoPorId(id) {
   if (!id || typeof HISTORICOS_BG3 === "undefined") return null;
@@ -347,10 +360,14 @@ function obterHistoricoPorId(id) {
   return null;
 }
 
-function sincronizarEstadoHistorico() {
+function sincronizarEstadoHistorico(dadosOrigem) {
   var sel = document.getElementById("historico");
   if (sel) {
     HISTORICO_ID_ATUAL = sel.value || "";
+    var fonte = dadosOrigem || (typeof MEMORIA_FICHA !== "undefined" && MEMORIA_FICHA);
+    if (fonte && Array.isArray(fonte._historico_pericias_auto)) {
+      HISTORICO_PERICIAS_AUTO = fonte._historico_pericias_auto.slice();
+    }
     atualizarCardsModalAtivo();
   }
 }
@@ -377,22 +394,32 @@ function aplicarHistorico(novoId, silencioso) {
   var antigoObj = obterHistoricoPorId(HISTORICO_ID_ATUAL);
   var novoObj = obterHistoricoPorId(novoId);
 
-  // 1. Se estiver trocando de histórico, desmarcar apenas as perícias concedidas pelo histórico anterior
-  if (antigoObj && antigoObj.id !== (novoObj ? novoObj.id : novoId) && Array.isArray(antigoObj.pericias)) {
-    antigoObj.pericias.forEach(function(idx) {
+  // 1. Desmarcar SOMENTE perícias que foram marcadas automaticamente pelo histórico anterior
+  var periciasAuto = Array.isArray(HISTORICO_PERICIAS_AUTO) ? HISTORICO_PERICIAS_AUTO : [];
+  if (antigoObj && antigoObj.id !== (novoObj ? novoObj.id : novoId)) {
+    periciasAuto.forEach(function(idx) {
       if (novoObj && novoObj.pericias && novoObj.pericias.indexOf(idx) >= 0) return;
       var chk = document.querySelector('[data-k="pericia_treinada_' + idx + '"]');
       if (chk) chk.checked = false;
     });
   }
 
-  // 2. Marcar as novas perícias concedidas pelo novo histórico
+  // 2. Marcar as novas perícias e rastrear APENAS as que estavam desmarcadas
+  var novasAuto = [];
   if (novoObj && Array.isArray(novoObj.pericias)) {
     novoObj.pericias.forEach(function(idx) {
       var chk = document.querySelector('[data-k="pericia_treinada_' + idx + '"]');
-      if (chk) chk.checked = true;
+      if (chk) {
+        if (!chk.checked) {
+          chk.checked = true;
+          novasAuto.push(idx);
+        } else if (periciasAuto.indexOf(idx) >= 0) {
+          novasAuto.push(idx);
+        }
+      }
     });
   }
+  HISTORICO_PERICIAS_AUTO = novasAuto;
 
   // 3. Atualizar identificador ativo e valor no select
   HISTORICO_ID_ATUAL = novoObj ? novoObj.id : (novoId || "");
